@@ -5,7 +5,7 @@
 	"image": "mcr.microsoft.com/devcontainers/rust:2-1-trixie",
 
 	"onCreateCommand": "apt update && apt install -y telnet netcat-openbsd &&  rustup default stable",
-	// "postCreateCommand": "scripts/oncreate.sh",
+	"postCreateCommand": "scripts/oncreate.sh",
 	"customizations": {
 		"vscode": {
 			"extensions": [
