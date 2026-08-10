@@ -1,0 +1,17 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/rust
+{
+	"name": "CodecraftersInterpreter",
+	"image": "mcr.microsoft.com/devcontainers/rust:2-1-trixie",
+
+	"onCreateCommand": "apt update && apt install -y telnet netcat-openbsd",
+	// "postCreateCommand": "scripts/oncreate.sh",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"esbenp.prettier-vscode"
+			]
+		}
+	},
+	"remoteUser": "root"
+}
