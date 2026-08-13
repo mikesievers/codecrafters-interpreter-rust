@@ -1,12 +1,19 @@
 #![allow(unused_variables)]
 use std::env;
 use std::fs;
+use anyhow::bail;
+use anyhow::{Context, Result};
 
-fn main() {
+pub enum LoxToken {
+    LeftParen,
+    RightParen,
+}
+
+fn main() -> Result<()> {
     let args: Vec<String> = env::args().collect();
     if args.len() < 3 {
         eprintln!("Usage: {} tokenize <filename>", args[0]);
-        return;
+        return Ok(());
     }
 
     let command = &args[1];
@@ -23,13 +30,14 @@ fn main() {
             });
 
             if !file_contents.is_empty() {
-                panic!("Scanner not implemented");
+                bail!("Scanner not implemented");
             } else {
                 println!("EOF  null"); // Placeholder, replace this line when implementing the scanner
             }
         }
         _ => {
-            eprintln!("Unknown command: {}", command);
+            bail!("Unknown command: {}", command);
         }
     }
+    Ok(())
 }
