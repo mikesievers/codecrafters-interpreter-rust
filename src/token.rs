@@ -1,9 +1,9 @@
 pub struct Token<'a> {
-    token_type: TokenType,
-    lexeme: &'a str,
+    pub token_type: TokenType,
+    pub lexeme: &'a str,
     // The literal will in the future hold a TokenValue, for now
     // it holds only 'null'
-    literal: Option<()>,
+    pub literal: Option<()>,
 }
 
 impl Token<'_> {
@@ -18,6 +18,14 @@ impl Token<'_> {
             self.lexeme,
             literal
         )
+    }
+
+    pub fn eof() -> Self {
+        Token {
+            token_type: TokenType::Eof,
+            lexeme: "",
+            literal: None,
+        }
     }
 }
 
