@@ -1,13 +1,15 @@
 #![allow(unused_variables)]
+mod scanner;
+mod token;
+
+use anyhow::Context;
+use anyhow::Result;
+use anyhow::bail;
 use std::env;
 use std::fs;
-use anyhow::bail;
-use anyhow::{Context, Result};
 
-pub enum LoxToken {
-    LeftParen,
-    RightParen,
-}
+use scanner::Scanner;
+use token::Token;
 
 fn main() -> Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -23,6 +25,9 @@ fn main() -> Result<()> {
         "tokenize" => {
             // You can use print statements as follows for debugging, they'll be visible when running tests.
             eprintln!("Logs from your program will appear here!");
+
+            let scanner = Scanner::from_file(filename)
+                .with_context(|| format!("Could not open file {filename}"))?;
 
             let file_contents = fs::read_to_string(filename).unwrap_or_else(|_| {
                 eprintln!("Failed to read file {}", filename);
