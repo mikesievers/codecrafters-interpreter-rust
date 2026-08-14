@@ -52,6 +52,36 @@ impl<'a> Token<'a> {
                 lexeme: c,
                 literal: None,
             }),
+            "," => Some(Self {
+                token_type: TokenType::Comma,
+                lexeme: c,
+                literal: None,
+            }),
+            "." => Some(Self {
+                token_type: TokenType::Dot,
+                lexeme: c,
+                literal: None,
+            }),
+            "-" => Some(Self {
+                token_type: TokenType::Minus,
+                lexeme: c,
+                literal: None,
+            }),
+            "+" => Some(Self {
+                token_type: TokenType::Plus,
+                lexeme: c,
+                literal: None,
+            }),
+            "*" => Some(Self {
+                token_type: TokenType::Star,
+                lexeme: c,
+                literal: None,
+            }),
+            ";" => Some(Self {
+                token_type: TokenType::Semicolon,
+                lexeme: c,
+                literal: None,
+            }),
             _ => None,
         }
     }
@@ -69,13 +99,13 @@ pub enum TokenType {
     RightParen,
     LeftBrace,
     RightBrace,
-    // Comma,
-    // Dot,
-    // Minus,
-    // Plus,
-    // Semicolon,
+    Comma,
+    Dot,
+    Minus,
+    Plus,
+    Semicolon,
+    Star,
     // Slash,
-    // Star,
 
     // // One or two character tokens.
     // Bang,
@@ -120,6 +150,12 @@ impl TokenType {
             TokenType::Eof => "EOF",
             TokenType::LeftBrace => "LEFT_BRACE",
             TokenType::RightBrace => "RIGHT_BRACE",
+            TokenType::Comma => "COMMA",
+            TokenType::Dot => "DOT",
+            TokenType::Minus => "MINUS",
+            TokenType::Plus => "PLUS",
+            TokenType::Semicolon => "SEMICOLON",
+            TokenType::Star => "STAR",
         }
     }
 }
