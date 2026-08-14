@@ -1,5 +1,24 @@
-pub struct Token {
+pub struct Token<'a> {
     token_type: TokenType,
+    lexeme: &'a str,
+    // The literal will in the future hold a TokenValue, for now
+    // it holds only 'null'
+    literal: Option<()>,
+}
+
+impl Token<'_> {
+    pub fn display(&self) -> String {
+        let literal = match self.literal {
+            Some(_) => "TBD".to_string(),
+            None => "null".to_string(),
+        };
+        format!(
+            "{} {} {}",
+            self.token_type.display_name(),
+            self.lexeme,
+            literal
+        )
+    }
 }
 
 pub enum TokenType {
@@ -49,4 +68,31 @@ pub enum TokenType {
     // Var,
     // While,
     Eof,
+}
+
+impl TokenType {
+    fn display_name(&self) -> &str {
+        match self {
+            TokenType::LeftParen => "LEFT_PAREN",
+            TokenType::RightParen => "RIGHT_PARENT",
+            TokenType::Eof => "EOF",
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    #[test]
+    fn test_display() {
+        let token = Token {
+            token_type: TokenType::LeftParen,
+            lexeme: "(",
+            literal: None,
+        };
+
+        assert_eq!(token.display(), "LEFT_PAREN ( null");
+    }
 }
