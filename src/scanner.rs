@@ -1,7 +1,6 @@
 use std::fs::read_to_string;
 
 use anyhow::Result;
-use itertools::Itertools;
 
 use crate::token::Token;
 
@@ -27,31 +26,27 @@ impl<'a> Scanner {
         let mut line_no: u32 = 1;
         let mut tokens: Vec<Token<'a>> = vec![];
 
-        let mut chars = self.data.chars().peekable();
+        let mut char_indices = self.data.char_indices().peekable();
 
         loop {
-            match chars.next() {
-                Some(c) => todo!(),
-                None => tokens.push(Token::eof()),
+            match char_indices.next() {
+                Some((byte_idx, c))
+                    if let Some(token) =
+                        Token::single_char(&self.data[byte_idx..byte_idx + c.len_utf8()]) =>
+                {
+                    tokens.push(token)
+                }
+                // default: emit error message
+                Some((byte_idx, c)) => {
+                    eprintln!("Unkown character on line {}: {}", line_no, c);
+                }
+                // No more chars -> EOF and break
+                None => {
+                    tokens.push(Token::eof());
+                    break;
+                }
             }
         }
-
-        // self.data
-        //     .chars()
-        //     .peekable()
-        //     .filter_map(
-        //         |c| match c {
-        //             _ => {
-        //                 eprintln!("Unknwn character in line {}: {}", line_no, c);
-        //                 None
-        //             }
-        //         }, // Token {
-        //            // token_type: todo!(),
-        //            // lexeme: todo!(),
-        //            // literal: todo!(),
-        //            // }
-        //     )
-        //     .collect_vec()
 
         tokens
     }

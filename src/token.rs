@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 pub struct Token<'a> {
     pub token_type: TokenType,
     pub lexeme: &'a str,
@@ -6,7 +8,7 @@ pub struct Token<'a> {
     pub literal: Option<()>,
 }
 
-impl Token<'_> {
+impl<'a> Token<'a> {
     pub fn display(&self) -> String {
         let literal = match self.literal {
             Some(_) => "TBD".to_string(),
@@ -26,6 +28,28 @@ impl Token<'_> {
             lexeme: "",
             literal: None,
         }
+    }
+
+    pub fn single_char(c: &'a str) -> Option<Self> {
+        match c {
+            "(" => Some(Self {
+                token_type: TokenType::LeftParen,
+                lexeme: c,
+                literal: None,
+            }),
+            ")" => Some(Self {
+                token_type: TokenType::RightParen,
+                lexeme: c,
+                literal: None,
+            }),
+            _ => None,
+        }
+    }
+}
+
+impl Display for Token<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.display())
     }
 }
 
@@ -82,7 +106,7 @@ impl TokenType {
     fn display_name(&self) -> &str {
         match self {
             TokenType::LeftParen => "LEFT_PAREN",
-            TokenType::RightParen => "RIGHT_PARENT",
+            TokenType::RightParen => "RIGHT_PAREN",
             TokenType::Eof => "EOF",
         }
     }
