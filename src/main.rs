@@ -24,7 +24,7 @@ fn main() -> Result<()> {
             // You can use print statements as follows for debugging, they'll be visible when running tests.
             // eprintln!("Logs from your program will appear here!");
 
-            let scanner = Scanner::from_file(filename)
+            let mut scanner = Scanner::from_file(filename)
                 .with_context(|| format!("Could not open file {filename}"))?;
 
             for token in scanner.tokenize() {

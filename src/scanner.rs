@@ -6,24 +6,29 @@ use crate::token::Token;
 
 pub struct Scanner {
     data: String,
+    lexical_errors_found: bool,
 }
 
 impl<'a> Scanner {
     pub fn from_string(data: String) -> Self {
-        Scanner { data }
+        Scanner {
+            data,
+            lexical_errors_found: false,
+        }
     }
 
     pub fn from_file(filename: &String) -> Result<Self> {
         let data = read_to_string(filename)?;
-        Ok(Scanner { data })
+        Ok(Scanner {
+            data,
+            lexical_errors_found: false,
+        })
     }
 
     // The lexemes are references into self.data, therefore
     // Self must live as long as the output Tokens are used
-    pub fn tokenize(&'a self) -> Vec<Token<'a>> {
-        // let iter = self.data.chars().peekable();
-
-        let mut line_no: u32 = 1;
+    pub fn tokenize(&'a mut self) -> Vec<Token<'a>> {
+        let line_no: u32 = 1;
         let mut tokens: Vec<Token<'a>> = vec![];
 
         let mut char_indices = self.data.char_indices().peekable();
@@ -39,7 +44,8 @@ impl<'a> Scanner {
                 }
                 // default: emit error message
                 Some((byte_idx, c)) => {
-                    eprintln!("Unkown character on line {}: {}", line_no, c);
+                    eprintln!("[line {}] Error: Unexpected character: {}", line_no, c);
+                    self.lexical_errors_found = true;
                 }
                 // No more chars -> EOF and break
                 None => {
@@ -61,7 +67,7 @@ mod tests {
 
     #[test]
     fn test_scanner() {
-        let scanner = Scanner::from_string("()".into());
+        let mut scanner = Scanner::from_string("()".into());
 
         assert_eq!(
             scanner
