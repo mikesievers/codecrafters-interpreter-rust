@@ -31,8 +31,9 @@ impl<'a> Scanner {
         loop {
             match char_indices.next() {
                 Some((byte_idx, c))
-                    if let Some(token) =
-                        Token::single_char(&self.data[byte_idx..byte_idx + c.len_utf8()]) =>
+                    if let Some(token) = Token::token_from_single_char(
+                        &self.data[byte_idx..byte_idx + c.len_utf8()],
+                    ) =>
                 {
                     tokens.push(token)
                 }

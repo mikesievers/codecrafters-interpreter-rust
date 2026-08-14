@@ -30,7 +30,7 @@ impl<'a> Token<'a> {
         }
     }
 
-    pub fn single_char(c: &'a str) -> Option<Self> {
+    pub fn token_from_single_char(c: &'a str) -> Option<Self> {
         match c {
             "(" => Some(Self {
                 token_type: TokenType::LeftParen,
@@ -39,6 +39,16 @@ impl<'a> Token<'a> {
             }),
             ")" => Some(Self {
                 token_type: TokenType::RightParen,
+                lexeme: c,
+                literal: None,
+            }),
+            "{" => Some(Self {
+                token_type: TokenType::LeftBrace,
+                lexeme: c,
+                literal: None,
+            }),
+            "}" => Some(Self {
+                token_type: TokenType::RightBrace,
                 lexeme: c,
                 literal: None,
             }),
@@ -57,8 +67,8 @@ pub enum TokenType {
     // Single-character tokens.
     LeftParen,
     RightParen,
-    // LeftBrace,
-    // RightBrace,
+    LeftBrace,
+    RightBrace,
     // Comma,
     // Dot,
     // Minus,
@@ -108,6 +118,8 @@ impl TokenType {
             TokenType::LeftParen => "LEFT_PAREN",
             TokenType::RightParen => "RIGHT_PAREN",
             TokenType::Eof => "EOF",
+            TokenType::LeftBrace => "LEFT_BRACE",
+            TokenType::RightBrace => "RIGHT_BRACE",
         }
     }
 }
