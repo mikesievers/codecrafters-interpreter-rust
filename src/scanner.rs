@@ -6,14 +6,14 @@ use crate::token::Token;
 
 pub struct Scanner {
     data: String,
-    lexical_errors_found: bool,
+    lexical_errors_found: Option<bool>,
 }
 
 impl<'a> Scanner {
     pub fn from_string(data: String) -> Self {
         Scanner {
             data,
-            lexical_errors_found: false,
+            lexical_errors_found: None,
         }
     }
 
@@ -21,7 +21,7 @@ impl<'a> Scanner {
         let data = read_to_string(filename)?;
         Ok(Scanner {
             data,
-            lexical_errors_found: false,
+            lexical_errors_found: None,
         })
     }
 
@@ -30,6 +30,7 @@ impl<'a> Scanner {
     pub fn tokenize(&'a mut self) -> Vec<Token<'a>> {
         let line_no: u32 = 1;
         let mut tokens: Vec<Token<'a>> = vec![];
+        self.lexical_errors_found = Some(false);
 
         let mut char_indices = self.data.char_indices().peekable();
 
@@ -45,7 +46,7 @@ impl<'a> Scanner {
                 // default: emit error message
                 Some((byte_idx, c)) => {
                     eprintln!("[line {}] Error: Unexpected character: {}", line_no, c);
-                    self.lexical_errors_found = true;
+                    self.lexical_errors_found = Some(true);
                 }
                 // No more chars -> EOF and break
                 None => {
@@ -56,6 +57,10 @@ impl<'a> Scanner {
         }
 
         tokens
+    }
+
+    pub fn lexing_failed(&self) -> Option<bool> {
+        self.lexical_errors_found
     }
 }
 
