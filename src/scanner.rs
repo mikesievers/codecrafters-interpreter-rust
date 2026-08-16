@@ -124,7 +124,7 @@ fn handle_string<'a>(
     }
 
     tokens.push(Token {
-        token_type: TokenType::Slash,
+        token_type: TokenType::String,
         lexeme: &data[byte_idx..byte_idx + byte_len],
         literal: Some(TokenValue::String(
             &data[byte_idx + quote_len..byte_idx + byte_len - quote_len],
