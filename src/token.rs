@@ -30,61 +30,6 @@ impl<'a> Token<'a> {
         }
     }
 
-    pub fn token_from_single_char(c: &'a str) -> Option<Self> {
-        match c {
-            "(" => Some(Self {
-                token_type: TokenType::LeftParen,
-                lexeme: c,
-                literal: None,
-            }),
-            ")" => Some(Self {
-                token_type: TokenType::RightParen,
-                lexeme: c,
-                literal: None,
-            }),
-            "{" => Some(Self {
-                token_type: TokenType::LeftBrace,
-                lexeme: c,
-                literal: None,
-            }),
-            "}" => Some(Self {
-                token_type: TokenType::RightBrace,
-                lexeme: c,
-                literal: None,
-            }),
-            "," => Some(Self {
-                token_type: TokenType::Comma,
-                lexeme: c,
-                literal: None,
-            }),
-            "." => Some(Self {
-                token_type: TokenType::Dot,
-                lexeme: c,
-                literal: None,
-            }),
-            "-" => Some(Self {
-                token_type: TokenType::Minus,
-                lexeme: c,
-                literal: None,
-            }),
-            "+" => Some(Self {
-                token_type: TokenType::Plus,
-                lexeme: c,
-                literal: None,
-            }),
-            "*" => Some(Self {
-                token_type: TokenType::Star,
-                lexeme: c,
-                literal: None,
-            }),
-            ";" => Some(Self {
-                token_type: TokenType::Semicolon,
-                lexeme: c,
-                literal: None,
-            }),
-            _ => None,
-        }
-    }
 }
 
 impl Display for Token<'_> {
@@ -110,8 +55,8 @@ pub enum TokenType {
     // // One or two character tokens.
     // Bang,
     // BangEqual,
-    // Equal,
-    // EqualEqual,
+    Equal,
+    EqualEqual,
     // Greater,
     // GreaterEqual,
     // Less,
@@ -156,6 +101,8 @@ impl TokenType {
             TokenType::Plus => "PLUS",
             TokenType::Semicolon => "SEMICOLON",
             TokenType::Star => "STAR",
+            TokenType::Equal => "=",
+            TokenType::EqualEqual => "==",
         }
     }
 }

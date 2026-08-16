@@ -2,7 +2,7 @@ use std::fs::read_to_string;
 
 use anyhow::Result;
 
-use crate::token::Token;
+use crate::token::{Token, TokenType};
 
 pub struct Scanner {
     data: String,
@@ -37,9 +37,8 @@ impl<'a> Scanner {
         loop {
             match char_indices.next() {
                 Some((byte_idx, c))
-                    if let Some(token) = Token::token_from_single_char(
-                        &self.data[byte_idx..byte_idx + c.len_utf8()],
-                    ) =>
+                    if let Some(token) =
+                        token_from_single_char(&self.data[byte_idx..byte_idx + c.len_utf8()]) =>
                 {
                     tokens.push(token)
                 }
@@ -61,6 +60,62 @@ impl<'a> Scanner {
 
     pub fn lexing_failed(&self) -> Option<bool> {
         self.lexical_errors_found
+    }
+}
+
+pub fn token_from_single_char<'a>(c: &'a str) -> Option<Token<'a>> {
+    match c {
+        "(" => Some(Token {
+            token_type: TokenType::LeftParen,
+            lexeme: c,
+            literal: None,
+        }),
+        ")" => Some(Token {
+            token_type: TokenType::RightParen,
+            lexeme: c,
+            literal: None,
+        }),
+        "{" => Some(Token {
+            token_type: TokenType::LeftBrace,
+            lexeme: c,
+            literal: None,
+        }),
+        "}" => Some(Token {
+            token_type: TokenType::RightBrace,
+            lexeme: c,
+            literal: None,
+        }),
+        "," => Some(Token {
+            token_type: TokenType::Comma,
+            lexeme: c,
+            literal: None,
+        }),
+        "." => Some(Token {
+            token_type: TokenType::Dot,
+            lexeme: c,
+            literal: None,
+        }),
+        "-" => Some(Token {
+            token_type: TokenType::Minus,
+            lexeme: c,
+            literal: None,
+        }),
+        "+" => Some(Token {
+            token_type: TokenType::Plus,
+            lexeme: c,
+            literal: None,
+        }),
+        "*" => Some(Token {
+            token_type: TokenType::Star,
+            lexeme: c,
+            literal: None,
+        }),
+        ";" => Some(Token {
+            token_type: TokenType::Semicolon,
+            lexeme: c,
+            literal: None,
+        }),
+        _ => None,
     }
 }
 
