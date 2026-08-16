@@ -139,9 +139,15 @@ fn handle_identifier<'a>(
         }
     }
 
+    let lexeme = &data[byte_idx..byte_idx + byte_len];
+    let token_type = match TokenType::from_str(lexeme) {
+        Some(token_type) => token_type,
+        None => TokenType::Identifier,
+    };
+
     tokens.push(Token {
-        token_type: TokenType::Identifier,
-        lexeme: &data[byte_idx..byte_idx + byte_len],
+        token_type,
+        lexeme,
         literal: None,
     });
 }
