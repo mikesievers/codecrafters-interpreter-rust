@@ -285,7 +285,7 @@ fn handle_greater<'a>(
     } else {
         tokens.push(Token {
             token_type: TokenType::Greater,
-            lexeme: &data[byte_idx..byte_idx + '!'.len_utf8()],
+            lexeme: &data[byte_idx..byte_idx + '>'.len_utf8()],
             literal: None,
         })
     }
@@ -310,7 +310,7 @@ fn handle_less<'a>(
     } else {
         tokens.push(Token {
             token_type: TokenType::Less,
-            lexeme: &data[byte_idx..byte_idx + '!'.len_utf8()],
+            lexeme: &data[byte_idx..byte_idx + '<'.len_utf8()],
             literal: None,
         })
     }
