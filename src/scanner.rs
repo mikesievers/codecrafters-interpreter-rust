@@ -1,7 +1,6 @@
 use std::fs::read_to_string;
 
 use anyhow::Result;
-use itertools::Itertools;
 use itertools::peek_nth;
 
 use crate::token::{Token, TokenType};
@@ -30,7 +29,7 @@ impl Scanner {
     // The lexemes are references into self.data, therefore
     // the returned tokens borrow from self while they are in use.
     pub fn tokenize(&mut self) -> Vec<Token<'_>> {
-        let line_no: u32 = 1;
+        let mut line_no: u32 = 1;
         let mut tokens: Vec<Token<'_>> = vec![];
         self.lexical_errors_found = Some(false);
 
@@ -63,6 +62,12 @@ impl Scanner {
                 // '/' Slash/comment
                 Some((byte_idx, c)) if c == '/' => {
                     handle_slash(&self.data, &mut tokens, &mut char_indices, byte_idx);
+                }
+                // Whitespace (Tab, Space, New Line)
+                Some((byte_idx, c)) if c == ' ' || c == '\t' || c == '\n' => {
+                    if c == '\n' {
+                        line_no = line_no + 1;
+                    }
                 }
                 // default: emit error message
                 Some((byte_idx, c)) => {

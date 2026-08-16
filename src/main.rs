@@ -2,9 +2,6 @@
 mod scanner;
 mod token;
 
-use anyhow::Context;
-use anyhow::Result;
-use anyhow::bail;
 use std::env;
 use std::process::ExitCode;
 
