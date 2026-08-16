@@ -3,7 +3,7 @@ use std::fs::read_to_string;
 use anyhow::Result;
 use itertools::peek_nth;
 
-use crate::token::{Token, TokenType};
+use crate::token::{Token, TokenType, TokenValue};
 
 pub struct Scanner {
     data: String,
@@ -44,29 +44,36 @@ impl Scanner {
                     tokens.push(token)
                 }
                 // '=' Equality / assignment
-                Some((byte_idx, c)) if c == '=' => {
+                Some((byte_idx, '=')) => {
                     handle_equal(&self.data, &mut tokens, &mut char_indices, byte_idx);
                 }
                 // '!' Bang / inequality
-                Some((byte_idx, c)) if c == '!' => {
+                Some((byte_idx, '!')) => {
                     handle_bang(&self.data, &mut tokens, &mut char_indices, byte_idx);
                 }
                 // '<' Less / LEQ
-                Some((byte_idx, c)) if c == '<' => {
+                Some((byte_idx, '<')) => {
                     handle_less(&self.data, &mut tokens, &mut char_indices, byte_idx);
                 }
                 // '>' Greater / GEQ
-                Some((byte_idx, c)) if c == '>' => {
+                Some((byte_idx, '>')) => {
                     handle_greater(&self.data, &mut tokens, &mut char_indices, byte_idx);
                 }
                 // '/' Slash/comment
-                Some((byte_idx, c)) if c == '/' => {
+                Some((byte_idx, '/')) => {
                     handle_slash(&self.data, &mut tokens, &mut char_indices, byte_idx);
                 }
                 // Whitespace (Tab, Space, New Line)
                 Some((byte_idx, c)) if c == ' ' || c == '\t' || c == '\n' => {
                     if c == '\n' {
-                        line_no = line_no + 1;
+                        line_no += 1;
+                    }
+                }
+                // '"' String
+                Some((byte_idx, '"')) => {
+                    match handle_string(&self.data, &mut tokens, &mut char_indices, byte_idx) {
+                        Some(n) => line_no += n,
+                        None => eprintln!("[line {}] Error: Unterminated string.", line_no),
                     }
                 }
                 // default: emit error message
@@ -88,6 +95,42 @@ impl Scanner {
     pub fn lexing_failed(&self) -> Option<bool> {
         self.lexical_errors_found
     }
+}
+
+fn handle_string<'a>(
+    data: &'a str,
+    tokens: &mut Vec<Token<'a>>,
+    char_indices: &mut itertools::PeekNth<std::str::CharIndices<'a>>,
+    byte_idx: usize,
+) -> Option<u32> {
+    // String: consume everything until the next double quote
+    // Return None on EOF
+    let quote_len = '"'.len_utf8();
+    let mut byte_len = quote_len;
+    let mut new_lines = 0;
+
+    loop {
+        if let Some((byte_idx_next, c_next)) = char_indices.next() {
+            byte_len += c_next.len_utf8();
+            if c_next == '"' {
+                break;
+            }
+            if c_next == '\n' {
+                new_lines += 1;
+            }
+        } else {
+            return None;
+        }
+    }
+
+    tokens.push(Token {
+        token_type: TokenType::Slash,
+        lexeme: &data[byte_idx..byte_idx + byte_len],
+        literal: Some(TokenValue::String(
+            &data[byte_idx + quote_len..byte_idx + byte_len - quote_len],
+        )),
+    });
+    Some(new_lines)
 }
 
 fn handle_slash<'a>(

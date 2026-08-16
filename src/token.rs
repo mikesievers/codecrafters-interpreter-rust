@@ -3,15 +3,25 @@ use std::fmt::Display;
 pub struct Token<'a> {
     pub token_type: TokenType,
     pub lexeme: &'a str,
-    // The literal will in the future hold a TokenValue, for now
-    // it holds only 'null'
-    pub literal: Option<()>,
+    pub literal: Option<TokenValue<'a>>,
+}
+
+pub enum TokenValue<'a> {
+    String(&'a str),
+}
+
+impl<'a> TokenValue<'a> {
+    pub fn to_string(&'a self) -> String {
+        match self {
+            TokenValue::String(s) => s.to_string(),
+        }
+    }
 }
 
 impl<'a> Token<'a> {
     pub fn display(&self) -> String {
-        let literal = match self.literal {
-            Some(_) => "TBD".to_string(),
+        let literal = match &self.literal {
+            Some(t) => t.to_string(),
             None => "null".to_string(),
         };
         format!(
@@ -63,7 +73,7 @@ pub enum TokenType {
 
     // // Literals.
     // Identifier,
-    // String,
+    String,
     // Number,
 
     // // Keywords.
@@ -109,6 +119,7 @@ impl TokenType {
             TokenType::Less => "LESS",
             TokenType::LessEqual => "LESS_EQUAL",
             TokenType::Slash => "SLASH",
+            TokenType::String => "STRING",
         }
     }
 }
