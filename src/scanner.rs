@@ -52,6 +52,14 @@ impl Scanner {
                 Some((byte_idx, c)) if c == '!' => {
                     handle_bang(&self.data, &mut tokens, &mut char_indices, byte_idx);
                 }
+                // '<' Less / LEQ
+                Some((byte_idx, c)) if c == '<' => {
+                    handle_less(&self.data, &mut tokens, &mut char_indices, byte_idx);
+                }
+                // '>' Greater / GEQ
+                Some((byte_idx, c)) if c == '>' => {
+                    handle_greater(&self.data, &mut tokens, &mut char_indices, byte_idx);
+                }
                 // default: emit error message
                 Some((byte_idx, c)) => {
                     eprintln!("[line {}] Error: Unexpected character: {}", line_no, c);
@@ -70,6 +78,56 @@ impl Scanner {
 
     pub fn lexing_failed(&self) -> Option<bool> {
         self.lexical_errors_found
+    }
+}
+
+fn handle_greater<'a>(
+    data: &'a str,
+    tokens: &mut Vec<Token<'a>>,
+    char_indices: &mut itertools::PeekNth<std::str::CharIndices<'a>>,
+    byte_idx: usize,
+) {
+    if let Some((byte_idx_next, c_next)) = char_indices.peek().cloned()
+        && c_next == '='
+    {
+        // consume the next char, which is confirmed to be '='
+        char_indices.next();
+        tokens.push(Token {
+            token_type: TokenType::GreaterEqual,
+            lexeme: &data[byte_idx..byte_idx_next + '='.len_utf8()],
+            literal: None,
+        })
+    } else {
+        tokens.push(Token {
+            token_type: TokenType::Greater,
+            lexeme: &data[byte_idx..byte_idx + '!'.len_utf8()],
+            literal: None,
+        })
+    }
+}
+
+fn handle_less<'a>(
+    data: &'a str,
+    tokens: &mut Vec<Token<'a>>,
+    char_indices: &mut itertools::PeekNth<std::str::CharIndices<'a>>,
+    byte_idx: usize,
+) {
+    if let Some((byte_idx_next, c_next)) = char_indices.peek().cloned()
+        && c_next == '='
+    {
+        // consume the next char, which is confirmed to be '='
+        char_indices.next();
+        tokens.push(Token {
+            token_type: TokenType::LessEqual,
+            lexeme: &data[byte_idx..byte_idx_next + '='.len_utf8()],
+            literal: None,
+        })
+    } else {
+        tokens.push(Token {
+            token_type: TokenType::Less,
+            lexeme: &data[byte_idx..byte_idx + '!'.len_utf8()],
+            literal: None,
+        })
     }
 }
 
