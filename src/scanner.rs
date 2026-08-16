@@ -11,7 +11,7 @@ pub struct Scanner {
     lexical_errors_found: Option<bool>,
 }
 
-impl<'a> Scanner {
+impl Scanner {
     pub fn from_string(data: String) -> Self {
         Scanner {
             data,
@@ -28,10 +28,10 @@ impl<'a> Scanner {
     }
 
     // The lexemes are references into self.data, therefore
-    // Self must live as long as the output Tokens are used
-    pub fn tokenize(&'a mut self) -> Vec<Token<'a>> {
+    // the returned tokens borrow from self while they are in use.
+    pub fn tokenize(&mut self) -> Vec<Token<'_>> {
         let line_no: u32 = 1;
-        let mut tokens: Vec<Token<'a>> = vec![];
+        let mut tokens: Vec<Token<'_>> = vec![];
         self.lexical_errors_found = Some(false);
 
         let mut char_indices = peek_nth(self.data.char_indices());
@@ -46,23 +46,7 @@ impl<'a> Scanner {
                 }
                 // '=' Equality / assignment
                 Some((byte_idx, c)) if c == '=' => {
-                    if let Some((byte_idx_next, c_next)) = char_indices.peek().cloned()
-                        && c_next == '='
-                    {
-                        // consume the next char, which is confirmed to be '='
-                        char_indices.next();
-                        tokens.push(Token {
-                            token_type: TokenType::EqualEqual,
-                            lexeme: &self.data[byte_idx..byte_idx_next + '='.len_utf8()],
-                            literal: None,
-                        })
-                    } else {
-                        tokens.push(Token {
-                            token_type: TokenType::Equal,
-                            lexeme: &self.data[byte_idx..byte_idx + '='.len_utf8()],
-                            literal: None,
-                        })
-                    }
+                    handle_equal(&self.data, &mut tokens, &mut char_indices, byte_idx);
                 }
                 // default: emit error message
                 Some((byte_idx, c)) => {
@@ -82,6 +66,31 @@ impl<'a> Scanner {
 
     pub fn lexing_failed(&self) -> Option<bool> {
         self.lexical_errors_found
+    }
+}
+
+fn handle_equal<'a>(
+    data: &'a str,
+    tokens: &mut Vec<Token<'a>>,
+    char_indices: &mut itertools::PeekNth<std::str::CharIndices<'a>>,
+    byte_idx: usize,
+) {
+    if let Some((byte_idx_next, c_next)) = char_indices.peek().cloned()
+        && c_next == '='
+    {
+        // consume the next char, which is confirmed to be '='
+        char_indices.next();
+        tokens.push(Token {
+            token_type: TokenType::EqualEqual,
+            lexeme: &data[byte_idx..byte_idx_next + '='.len_utf8()],
+            literal: None,
+        })
+    } else {
+        tokens.push(Token {
+            token_type: TokenType::Equal,
+            lexeme: &data[byte_idx..byte_idx + '='.len_utf8()],
+            literal: None,
+        })
     }
 }
 
