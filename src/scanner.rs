@@ -58,7 +58,7 @@ impl<'a> Scanner {
                         })
                     } else {
                         tokens.push(Token {
-                            token_type: TokenType::EqualEqual,
+                            token_type: TokenType::Equal,
                             lexeme: &self.data[byte_idx..byte_idx + '='.len_utf8()],
                             literal: None,
                         })
