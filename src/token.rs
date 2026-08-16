@@ -29,7 +29,6 @@ impl<'a> Token<'a> {
             literal: None,
         }
     }
-
 }
 
 impl Display for Token<'_> {
@@ -101,8 +100,8 @@ impl TokenType {
             TokenType::Plus => "PLUS",
             TokenType::Semicolon => "SEMICOLON",
             TokenType::Star => "STAR",
-            TokenType::Equal => "=",
-            TokenType::EqualEqual => "==",
+            TokenType::Equal => "EQUAL",
+            TokenType::EqualEqual => "EQUAL_EQUAL",
         }
     }
 }

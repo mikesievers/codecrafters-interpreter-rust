@@ -1,6 +1,8 @@
 use std::fs::read_to_string;
 
 use anyhow::Result;
+use itertools::Itertools;
+use itertools::peek_nth;
 
 use crate::token::{Token, TokenType};
 
@@ -32,7 +34,7 @@ impl<'a> Scanner {
         let mut tokens: Vec<Token<'a>> = vec![];
         self.lexical_errors_found = Some(false);
 
-        let mut char_indices = self.data.char_indices().peekable();
+        let mut char_indices = peek_nth(self.data.char_indices());
 
         loop {
             match char_indices.next() {
@@ -41,6 +43,26 @@ impl<'a> Scanner {
                         token_from_single_char(&self.data[byte_idx..byte_idx + c.len_utf8()]) =>
                 {
                     tokens.push(token)
+                }
+                // '=' Equality / assignment
+                Some((byte_idx, c)) if c == '=' => {
+                    if let Some((byte_idx_next, c_next)) = char_indices.peek().cloned()
+                        && c_next == '='
+                    {
+                        // consume the next char, which is confirmed to be '='
+                        char_indices.next();
+                        tokens.push(Token {
+                            token_type: TokenType::EqualEqual,
+                            lexeme: &self.data[byte_idx..byte_idx_next + '='.len_utf8()],
+                            literal: None,
+                        })
+                    } else {
+                        tokens.push(Token {
+                            token_type: TokenType::EqualEqual,
+                            lexeme: &self.data[byte_idx..byte_idx + '='.len_utf8()],
+                            literal: None,
+                        })
+                    }
                 }
                 // default: emit error message
                 Some((byte_idx, c)) => {
@@ -63,7 +85,7 @@ impl<'a> Scanner {
     }
 }
 
-pub fn token_from_single_char<'a>(c: &'a str) -> Option<Token<'a>> {
+fn token_from_single_char<'a>(c: &'a str) -> Option<Token<'a>> {
     match c {
         "(" => Some(Token {
             token_type: TokenType::LeftParen,
