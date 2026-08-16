@@ -8,12 +8,14 @@ pub struct Token<'a> {
 
 pub enum TokenValue<'a> {
     String(&'a str),
+    Number(f64),
 }
 
 impl<'a> TokenValue<'a> {
     pub fn to_string(&'a self) -> String {
         match self {
             TokenValue::String(s) => s.to_string(),
+            TokenValue::Number(n) => format!("{:1?}", n),
         }
     }
 }
@@ -74,7 +76,7 @@ pub enum TokenType {
     // // Literals.
     // Identifier,
     String,
-    // Number,
+    Number,
 
     // // Keywords.
     // And,
@@ -120,6 +122,7 @@ impl TokenType {
             TokenType::LessEqual => "LESS_EQUAL",
             TokenType::Slash => "SLASH",
             TokenType::String => "STRING",
+            TokenType::Number => "NUMBER",
         }
     }
 }

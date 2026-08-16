@@ -79,6 +79,10 @@ impl Scanner {
                         }
                     }
                 }
+                // Number
+                Some((byte_idx, c)) if c.is_ascii_digit() => {
+                    handle_number(&self.data, &mut tokens, &mut char_indices, byte_idx);
+                }
                 // default: emit error message
                 Some((byte_idx, c)) => {
                     eprintln!("[line {}] Error: Unexpected character: {}", line_no, c);
@@ -98,6 +102,53 @@ impl Scanner {
     pub fn lexing_failed(&self) -> Option<bool> {
         self.lexical_errors_found
     }
+}
+
+fn handle_number<'a>(
+    data: &'a str,
+    tokens: &mut Vec<Token<'a>>,
+    char_indices: &mut itertools::PeekNth<std::str::CharIndices<'a>>,
+    byte_idx: usize,
+) {
+    // Number: digits or digits DOT digits
+    // Track the byte length, initialize with a single digit length
+    // (0 is taken as an example, all ditigts assumed to occupy same amount of bytes)
+    let mut byte_len = '0'.len_utf8();
+    loop {
+        match char_indices.peek().cloned() {
+            Some((_idx_next, c_next)) if c_next.is_ascii_digit() => {
+                // Next char is a digit - consume it and increment byte_len
+                byte_len += c_next.len_utf8();
+                char_indices.next();
+            }
+            // If the next character is a DOT, and the one after it a digit,
+            // consume both
+            Some((_idx_next, '.'))
+                if let Some((_idx_next_next, c_next_next)) = char_indices.peek_nth(1)
+                    && c_next_next.is_ascii_digit() =>
+            {
+                byte_len += '.'.len_utf8();
+                char_indices.next();
+                // again use 0 as representative for the length of and Otherwise
+                // digit char
+                byte_len += '0'.len_utf8();
+                char_indices.next();
+            }
+            None | Some(_) => {
+                break;
+            }
+        }
+    }
+
+    let number_chars = &data[byte_idx..byte_idx + byte_len];
+
+    tokens.push(Token {
+        token_type: TokenType::Number,
+        lexeme: number_chars,
+        // SAFETY: The above already checks whether the number consists only of digits or digits DOT
+        // digits, therefor unwrap is safe
+        literal: Some(TokenValue::Number(number_chars.parse::<f64>().unwrap())),
+    });
 }
 
 fn handle_string<'a>(

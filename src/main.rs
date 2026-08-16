@@ -23,7 +23,7 @@ fn main() -> ExitCode {
             // eprintln!("Logs from your program will appear here!");
 
             let mut scanner = Scanner::from_file(filename)
-                .expect(format!("Could not open file {}", filename).as_str());
+                .unwrap_or_else(|_| panic!("Could not open file {}", filename));
 
             for token in scanner.tokenize() {
                 println!("{token}");
