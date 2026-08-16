@@ -73,7 +73,10 @@ impl Scanner {
                 Some((byte_idx, '"')) => {
                     match handle_string(&self.data, &mut tokens, &mut char_indices, byte_idx) {
                         Some(n) => line_no += n,
-                        None => eprintln!("[line {}] Error: Unterminated string.", line_no),
+                        None => {
+                            eprintln!("[line {}] Error: Unterminated string.", line_no);
+                            self.lexical_errors_found = Some(true);
+                        }
                     }
                 }
                 // default: emit error message
