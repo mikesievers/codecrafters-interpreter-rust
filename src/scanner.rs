@@ -60,6 +60,10 @@ impl Scanner {
                 Some((byte_idx, c)) if c == '>' => {
                     handle_greater(&self.data, &mut tokens, &mut char_indices, byte_idx);
                 }
+                // '/' Slash/comment
+                Some((byte_idx, c)) if c == '/' => {
+                    handle_slash(&self.data, &mut tokens, &mut char_indices, byte_idx);
+                }
                 // default: emit error message
                 Some((byte_idx, c)) => {
                     eprintln!("[line {}] Error: Unexpected character: {}", line_no, c);
@@ -78,6 +82,37 @@ impl Scanner {
 
     pub fn lexing_failed(&self) -> Option<bool> {
         self.lexical_errors_found
+    }
+}
+
+fn handle_slash<'a>(
+    data: &'a str,
+    tokens: &mut Vec<Token<'a>>,
+    char_indices: &mut itertools::PeekNth<std::str::CharIndices<'a>>,
+    byte_idx: usize,
+) {
+    // If the following char is also a slash, it's a comment.
+    // Consume the rest of the line.
+    // Otherwise, it's a simple slash
+    if let Some((byte_idx_next, c_next)) = char_indices.peek().cloned()
+        && c_next == '/'
+    {
+        // consume the rest of the line, this is a comment.
+        // It's safe to start with consuming, because we know the first character is a slash
+        loop {
+            char_indices.next();
+            match char_indices.peek() {
+                Some((_, c)) if *c == '\n' => break, // EOL
+                Some(_) => continue,                 // Any part of the comment
+                None => break,                       // EOF
+            }
+        }
+    } else {
+        tokens.push(Token {
+            token_type: TokenType::Slash,
+            lexeme: &data[byte_idx..byte_idx + '/'.len_utf8()],
+            literal: None,
+        })
     }
 }
 

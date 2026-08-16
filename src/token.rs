@@ -49,7 +49,7 @@ pub enum TokenType {
     Plus,
     Semicolon,
     Star,
-    // Slash,
+    Slash,
 
     // // One or two character tokens.
     Bang,
@@ -108,6 +108,7 @@ impl TokenType {
             TokenType::GreaterEqual => "GREATER_EQUAL",
             TokenType::Less => "LESS",
             TokenType::LessEqual => "LESS_EQUAL",
+            TokenType::Slash => "SLASH",
         }
     }
 }
