@@ -64,7 +64,7 @@ impl Scanner {
                     handle_slash(&self.data, &mut tokens, &mut char_indices, byte_idx);
                 }
                 // Whitespace (Tab, Space, New Line)
-                Some((byte_idx, c)) if c == ' ' || c == '\t' || c == '\n' => {
+                Some((_byte_idx, c)) if c == ' ' || c == '\t' || c == '\n' => {
                     if c == '\n' {
                         line_no += 1;
                     }
@@ -89,7 +89,7 @@ impl Scanner {
                 }
                 // -- Everthing else
                 // default: emit error message
-                Some((byte_idx, c)) => {
+                Some((_byte_idx, c)) => {
                     eprintln!("[line {}] Error: Unexpected character: {}", line_no, c);
                     self.lexical_errors_found = Some(true);
                 }
@@ -160,7 +160,7 @@ fn handle_number<'a>(
 ) {
     // Number: digits or digits DOT digits
     // Track the byte length, initialize with a single digit length
-    // (0 is taken as an example, all ditigts assumed to occupy same amount of bytes)
+    // (0 is taken as an example, all digits assumed to occupy same amount of bytes)
     let mut byte_len = '0'.len_utf8();
     loop {
         match char_indices.peek().cloned() {
@@ -177,7 +177,7 @@ fn handle_number<'a>(
             {
                 byte_len += '.'.len_utf8();
                 char_indices.next();
-                // again use 0 as representative for the length of and Otherwise
+                // again use 0 as representative for the length of any other
                 // digit char
                 byte_len += '0'.len_utf8();
                 char_indices.next();
@@ -212,7 +212,7 @@ fn handle_string<'a>(
     let mut new_lines = 0;
 
     loop {
-        if let Some((byte_idx_next, c_next)) = char_indices.next() {
+        if let Some((_byte_idx_next, c_next)) = char_indices.next() {
             byte_len += c_next.len_utf8();
             if c_next == '"' {
                 break;
@@ -244,7 +244,7 @@ fn handle_slash<'a>(
     // If the following char is also a slash, it's a comment.
     // Consume the rest of the line.
     // Otherwise, it's a simple slash
-    if let Some((byte_idx_next, c_next)) = char_indices.peek().cloned()
+    if let Some((_byte_idx_next, c_next)) = char_indices.peek().cloned()
         && c_next == '/'
     {
         // consume the rest of the line, this is a comment.
