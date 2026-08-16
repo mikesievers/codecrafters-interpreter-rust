@@ -48,6 +48,10 @@ impl Scanner {
                 Some((byte_idx, c)) if c == '=' => {
                     handle_equal(&self.data, &mut tokens, &mut char_indices, byte_idx);
                 }
+                // '!' Bang / inequality
+                Some((byte_idx, c)) if c == '!' => {
+                    handle_bang(&self.data, &mut tokens, &mut char_indices, byte_idx);
+                }
                 // default: emit error message
                 Some((byte_idx, c)) => {
                     eprintln!("[line {}] Error: Unexpected character: {}", line_no, c);
@@ -66,6 +70,31 @@ impl Scanner {
 
     pub fn lexing_failed(&self) -> Option<bool> {
         self.lexical_errors_found
+    }
+}
+
+fn handle_bang<'a>(
+    data: &'a str,
+    tokens: &mut Vec<Token<'a>>,
+    char_indices: &mut itertools::PeekNth<std::str::CharIndices<'a>>,
+    byte_idx: usize,
+) {
+    if let Some((byte_idx_next, c_next)) = char_indices.peek().cloned()
+        && c_next == '='
+    {
+        // consume the next char, which is confirmed to be '='
+        char_indices.next();
+        tokens.push(Token {
+            token_type: TokenType::BangEqual,
+            lexeme: &data[byte_idx..byte_idx_next + '='.len_utf8()],
+            literal: None,
+        })
+    } else {
+        tokens.push(Token {
+            token_type: TokenType::Bang,
+            lexeme: &data[byte_idx..byte_idx + '!'.len_utf8()],
+            literal: None,
+        })
     }
 }
 

@@ -52,8 +52,8 @@ pub enum TokenType {
     // Slash,
 
     // // One or two character tokens.
-    // Bang,
-    // BangEqual,
+    Bang,
+    BangEqual,
     Equal,
     EqualEqual,
     // Greater,
@@ -102,6 +102,8 @@ impl TokenType {
             TokenType::Star => "STAR",
             TokenType::Equal => "EQUAL",
             TokenType::EqualEqual => "EQUAL_EQUAL",
+            TokenType::Bang => "BANG",
+            TokenType::BangEqual => "BANG_EQUAL",
         }
     }
 }
