@@ -15,7 +15,7 @@ impl<'a> TokenValue<'a> {
     pub fn to_string(&'a self) -> String {
         match self {
             TokenValue::String(s) => s.to_string(),
-            TokenValue::Number(n) => format!("{:1?}", n),
+            TokenValue::Number(n) => format!("{:.1?}", n),
         }
     }
 }
