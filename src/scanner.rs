@@ -83,6 +83,11 @@ impl Scanner {
                 Some((byte_idx, c)) if c.is_ascii_digit() => {
                     handle_number(&self.data, &mut tokens, &mut char_indices, byte_idx);
                 }
+                // Identifier
+                Some((byte_idx, c)) if is_alpha(&c) => {
+                    handle_identifier(&self.data, &mut tokens, &mut char_indices, byte_idx, c);
+                }
+                // -- Everthing else
                 // default: emit error message
                 Some((byte_idx, c)) => {
                     eprintln!("[line {}] Error: Unexpected character: {}", line_no, c);
@@ -102,6 +107,43 @@ impl Scanner {
     pub fn lexing_failed(&self) -> Option<bool> {
         self.lexical_errors_found
     }
+}
+
+fn is_alpha(c: &char) -> bool {
+    ('a'..'z').contains(c) || ('A'..'Z').contains(c) || *c == '_'
+}
+
+fn is_alpha_numeric(c: &char) -> bool {
+    is_alpha(c) || c.is_ascii_digit()
+}
+
+fn handle_identifier<'a>(
+    data: &'a str,
+    tokens: &mut Vec<Token<'a>>,
+    char_indices: &mut itertools::PeekNth<std::str::CharIndices<'a>>,
+    byte_idx: usize,
+    c: char,
+) {
+    // Identifier: anything alphanumeric, starting with alpha
+    let mut byte_len = c.len_utf8();
+
+    loop {
+        match char_indices.peek() {
+            Some((byte_idx_next, c_next)) if is_alpha_numeric(c_next) => {
+                byte_len += c_next.len_utf8();
+                char_indices.next();
+            }
+            _ => {
+                break;
+            }
+        }
+    }
+
+    tokens.push(Token {
+        token_type: TokenType::Identifier,
+        lexeme: &data[byte_idx..byte_idx + byte_len],
+        literal: None,
+    });
 }
 
 fn handle_number<'a>(

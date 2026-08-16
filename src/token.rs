@@ -63,7 +63,7 @@ pub enum TokenType {
     Star,
     Slash,
 
-    // // One or two character tokens.
+    // One or two character tokens.
     Bang,
     BangEqual,
     Equal,
@@ -73,12 +73,12 @@ pub enum TokenType {
     Less,
     LessEqual,
 
-    // // Literals.
-    // Identifier,
+    // Literals.
+    Identifier,
     String,
     Number,
 
-    // // Keywords.
+    // Keywords.
     // And,
     // Class,
     // Else,
@@ -123,6 +123,7 @@ impl TokenType {
             TokenType::Slash => "SLASH",
             TokenType::String => "STRING",
             TokenType::Number => "NUMBER",
+            TokenType::Identifier => "IDENTIFIER",
         }
     }
 }
