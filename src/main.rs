@@ -1,8 +1,11 @@
+mod expr;
 mod scanner;
 mod token;
 
 use std::env;
 use std::process::ExitCode;
+
+use expr::Expr;
 
 pub use scanner::Scanner;
 
