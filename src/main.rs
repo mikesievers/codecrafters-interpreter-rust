@@ -1,4 +1,5 @@
 mod expr;
+mod parser;
 mod scanner;
 mod token;
 
@@ -7,6 +8,7 @@ use std::process::ExitCode;
 
 use expr::Expr;
 
+use parser::Parser;
 pub use scanner::Scanner;
 
 fn main() -> ExitCode {
