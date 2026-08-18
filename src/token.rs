@@ -9,14 +9,19 @@ pub struct Token<'a> {
 pub enum TokenValue<'a> {
     String(&'a str),
     Number(f64),
+    Boolean(bool),
+    Nil,
 }
 
-impl<'a> TokenValue<'a> {
-    pub fn to_string(&'a self) -> String {
-        match self {
+impl<'a> Display for TokenValue<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let output = match self {
             TokenValue::String(s) => s.to_string(),
-            TokenValue::Number(n) => format!("{:.1?}", n),
-        }
+            TokenValue::Number(n) => format!("{:1?}", n),
+            TokenValue::Boolean(b) => b.to_string(),
+            TokenValue::Nil => "nil".to_string(),
+        };
+        write!(f, "{output}")
     }
 }
 
