@@ -1,13 +1,13 @@
 use std::fmt::Display;
 
-#[derive(PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct Token<'a> {
     pub token_type: TokenType,
     pub lexeme: &'a str,
     pub literal: Option<TokenValue<'a>>,
 }
 
-#[derive(PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum TokenValue<'a> {
     String(&'a str),
     Number(f64),
@@ -56,7 +56,7 @@ impl Display for Token<'_> {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum TokenType {
     // Single-character tokens.
     LeftParen,

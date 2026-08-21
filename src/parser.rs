@@ -3,6 +3,12 @@ use crate::{
     token::{Token, TokenType, TokenValue},
 };
 
+static EOF_TOKEN: Token<'static> = Token {
+    token_type: TokenType::Eof,
+    lexeme: "",
+    literal: None,
+};
+
 pub struct Parser<'a> {
     tokens: Vec<Token<'a>>,
     current: usize,
@@ -11,18 +17,18 @@ pub struct Parser<'a> {
 impl<'a> Parser<'a> {
     pub fn new(tokens: Vec<Token<'a>>) -> Self {
         // Make sure the tokens Vec ends with an Eof
-        if tokens.last() != Some(&Token::eof()) {
+        if tokens.last() != Some(&EOF_TOKEN) {
             panic!("The tokens vector must end with an Eof token");
         }
 
         Parser { tokens, current: 0 }
     }
 
-    pub fn parse(&'a mut self) -> Result<Expr<'a>, ()> {
+    pub fn parse(&mut self) -> Result<Expr<'_>, ()> {
         parse_primary(self)
     }
 
-    fn advance(&'a mut self) -> &'a Token<'a> {
+    fn advance(&mut self) -> &Token<'a> {
         if !(self.is_at_end()) {
             self.current += 1;
         }
@@ -33,7 +39,7 @@ impl<'a> Parser<'a> {
         self.current == self.tokens.len() - 1
     }
 
-    fn peek(&'a self) -> &'a Token<'a> {
+    fn peek(&self) -> &Token<'a> {
         // SAFETY: self.current is only ever incremented by self.advance,
         // and only if it is not already pointing to the last token
         // Also, the Parser panic()s if the tokens Vec does not contain one
@@ -41,20 +47,16 @@ impl<'a> Parser<'a> {
         &self.tokens.get(self.current).unwrap()
     }
 
-    fn previous(&'a self) -> &'a Token<'a> {
+    fn previous(&self) -> &Token<'a> {
         match self.current {
-            0 => &Token {
-                token_type: TokenType::Eof,
-                lexeme: "",
-                literal: None,
-            },
+            0 => &EOF_TOKEN,
             // SAFETY: self.current is > 0 here and only advanced through
             // advance, which ensures it is does not go out of bounds
             _ => self.tokens.get(self.current).unwrap(),
         }
     }
 
-    fn matches(&'a mut self, token_types: &[TokenType]) -> bool {
+    fn matches(&mut self, token_types: &[TokenType]) -> bool {
         // SAFETY: self.current can only be 0 to tokens.len() and
         // tokens has at least one element via new()
         if token_types.contains(&self.tokens.get(self.current).unwrap().token_type) {
@@ -66,11 +68,20 @@ impl<'a> Parser<'a> {
     }
 }
 
-fn parse_primary<'a>(parser: &'a mut Parser<'a>) -> Result<Expr<'a>, ()> {
+// primary        → NUMBER | STRING | "true" | "false" | "nil"
+//                | "(" expression ")" ;
+fn parse_primary<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
     if parser.matches(&[TokenType::Nil]) {
         return Ok(Expr::Literal(TokenValue::Nil));
     }
 
+    if parser.matches(&[TokenType::True]) {
+        return Ok(Expr::Literal(TokenValue::Boolean(true)));
+    }
+
+    if parser.matches(&[TokenType::False]) {
+        return Ok(Expr::Literal(TokenValue::Boolean(false)));
+    }
     eprintln!("No matching primary found");
     Err(())
 }
