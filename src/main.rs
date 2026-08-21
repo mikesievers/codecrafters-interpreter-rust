@@ -14,7 +14,7 @@ pub use scanner::Scanner;
 fn main() -> ExitCode {
     let args: Vec<String> = env::args().collect();
     if args.len() < 3 {
-        eprintln!("Usage: {} tokenize <filename>", args[0]);
+        eprintln!("Usage: {} (tokenize|parse) <filename>", args[0]);
         return ExitCode::FAILURE;
     }
 
@@ -36,6 +36,16 @@ fn main() -> ExitCode {
                 return ExitCode::from(65);
             }
         }
+        "parse" => {
+            let mut scanner = Scanner::from_file(filename)
+                .unwrap_or_else(|_| panic!("Could not open file {}", filename));
+
+            let mut parser = Parser::new(scanner.tokenize());
+
+            let expr = parser.parse().expect("Parsing failed.");
+            println!("{}", expr);
+        }
+
         _ => {
             eprintln!("Unknown command: {}", command);
             return ExitCode::FAILURE;

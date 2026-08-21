@@ -1,11 +1,97 @@
-use crate::token::Token;
+use crate::{
+    expr::Expr,
+    token::{Token, TokenType, TokenValue},
+};
 
 pub struct Parser<'a> {
     tokens: Vec<Token<'a>>,
+    current: usize,
 }
 
 impl<'a> Parser<'a> {
     pub fn new(tokens: Vec<Token<'a>>) -> Self {
-        Parser { tokens }
+        // Make sure the tokens Vec ends with an Eof
+        if tokens.last() != Some(&Token::eof()) {
+            panic!("The tokens vector must end with an Eof token");
+        }
+
+        Parser { tokens, current: 0 }
+    }
+
+    pub fn parse(&'a mut self) -> Result<Expr<'a>, ()> {
+        parse_primary(self)
+    }
+
+    fn advance(&'a mut self) -> &'a Token<'a> {
+        if !(self.is_at_end()) {
+            self.current += 1;
+        }
+        self.previous()
+    }
+
+    fn is_at_end(&self) -> bool {
+        self.current == self.tokens.len() - 1
+    }
+
+    fn peek(&'a self) -> &'a Token<'a> {
+        // SAFETY: self.current is only ever incremented by self.advance,
+        // and only if it is not already pointing to the last token
+        // Also, the Parser panic()s if the tokens Vec does not contain one
+        // (EOF) token
+        &self.tokens.get(self.current).unwrap()
+    }
+
+    fn previous(&'a self) -> &'a Token<'a> {
+        match self.current {
+            0 => &Token {
+                token_type: TokenType::Eof,
+                lexeme: "",
+                literal: None,
+            },
+            // SAFETY: self.current is > 0 here and only advanced through
+            // advance, which ensures it is does not go out of bounds
+            _ => self.tokens.get(self.current).unwrap(),
+        }
+    }
+
+    fn matches(&'a mut self, token_types: &[TokenType]) -> bool {
+        // SAFETY: self.current can only be 0 to tokens.len() and
+        // tokens has at least one element via new()
+        if token_types.contains(&self.tokens.get(self.current).unwrap().token_type) {
+            self.advance();
+            return true;
+        } else {
+            return false;
+        }
+    }
+}
+
+fn parse_primary<'a>(parser: &'a mut Parser<'a>) -> Result<Expr<'a>, ()> {
+    if parser.matches(&[TokenType::Nil]) {
+        return Ok(Expr::Literal(TokenValue::Nil));
+    }
+
+    eprintln!("No matching primary found");
+    Err(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::token::{Token, TokenType};
+
+    #[test]
+    fn test_parse_primary() {
+        let token = Token {
+            token_type: TokenType::Nil,
+            lexeme: "nil",
+            literal: None,
+        };
+        let tokens = vec![token, Token::eof()];
+
+        let mut parser = Parser::new(tokens);
+
+        let ast = parser.parse().unwrap();
+        assert_eq!(ast.to_string(), "nil".to_string());
     }
 }
