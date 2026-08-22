@@ -27,7 +27,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse(&mut self) -> Result<Expr<'_>, ()> {
-        parse_primary(self)
+        parse_expression(self)
     }
 
     fn advance(&mut self) -> &Token<'a> {
@@ -77,6 +77,37 @@ impl<'a> Parser<'a> {
             Err(())
         }
     }
+}
+
+// expression     → equality ;
+fn parse_expression<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
+    parse_equality(parser)
+}
+
+// equality       → comparison ( ( "!=" | "==" ) comparison )* ;
+fn parse_equality<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
+    parse_comparison(parser)
+}
+
+// comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
+fn parse_comparison<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
+    parse_term(parser)
+}
+
+// term           → factor ( ( "-" | "+" ) factor )* ;
+fn parse_term<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
+    parse_factor(parser)
+}
+
+// factor         → unary ( ( "/" | "*" ) unary )* ;
+fn parse_factor<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
+    parse_unary(parser)
+}
+
+// unary          → ( "!" | "-" ) unary
+//                | primary ;
+fn parse_unary<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
+    parse_primary(parser)
 }
 
 // primary        → NUMBER | STRING | "true" | "false" | "nil"
