@@ -82,6 +82,15 @@ fn parse_primary<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
         ));
     }
 
+    if current_token.token_type == TokenType::String {
+        return Ok(Expr::Literal(
+            current_token
+                .literal
+                .clone()
+                .expect("String token without literal must not exist"),
+        ));
+    }
+
     if parser.matches(&[TokenType::Nil]) {
         return Ok(Expr::Literal(TokenValue::Nil));
     }
@@ -130,5 +139,20 @@ mod tests {
 
         let primary = parse_primary(&mut parser).unwrap();
         assert_eq!(primary.to_string(), "42.0".to_string());
+    }
+
+    #[test]
+    fn test_parse_primary_string() {
+        let token = Token {
+            token_type: TokenType::String,
+            lexeme: "",
+            literal: Some(TokenValue::String("42")),
+        };
+        let tokens = vec![token, Token::eof()];
+
+        let mut parser = Parser::new(tokens);
+
+        let primary = parse_primary(&mut parser).unwrap();
+        assert_eq!(primary.to_string(), "42".to_string());
     }
 }
