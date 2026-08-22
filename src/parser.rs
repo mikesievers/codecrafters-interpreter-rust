@@ -121,6 +121,7 @@ fn parse_unary<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
 // primary        → NUMBER | STRING | "true" | "false" | "nil"
 //                | "(" expression ")" ;
 fn parse_primary<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
+    eprintln!("{}",parser.peek());
     if parser.matches(&[TokenType::Number]) {
         let n = parser
             .previous()
@@ -152,7 +153,7 @@ fn parse_primary<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
     }
 
     if parser.matches(&[TokenType::LeftParen]) {
-        let expr = parse_primary(parser)?;
+        let expr = parse_expression(parser)?;
         parser.consume(&TokenType::RightParen)?;
         return Ok(Expr::Grouping(Box::new(expr)));
     }
@@ -248,11 +249,11 @@ mod tests {
             lexeme: "",
             literal: None,
         };
-        let tokens = vec![bang, token_true, Token::eof()];
+        let tokens = vec![bang.clone(), bang, token_true, Token::eof()];
 
         let mut parser = Parser::new(tokens);
 
         let primary = parser.parse().unwrap();
-        assert_eq!(primary.to_string(), "(! true)".to_string());
+        assert_eq!(primary.to_string(), "(! (! true))".to_string());
     }
 }
