@@ -79,6 +79,8 @@ impl<'a> Parser<'a> {
     }
 }
 
+// Implementation of the different steps of the grammar
+
 // expression     → equality ;
 fn parse_expression<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
     parse_equality(parser)
