@@ -98,12 +98,28 @@ fn parse_comparison<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
 
 // term           → factor ( ( "-" | "+" ) factor )* ;
 fn parse_term<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
-    parse_factor(parser)
+    let expr = parse_factor(parser)?;
+
+    if parser.matches(&[TokenType::Minus, TokenType::Plus]) {
+        let operator = parser.previous().clone();
+        let right = parse_factor(parser)?;
+        return Ok(Expr::Binary{operator, left: Box::new(expr), right: Box::new(right)})
+    }
+
+    Ok(expr)
 }
 
 // factor         → unary ( ( "/" | "*" ) unary )* ;
 fn parse_factor<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
-    parse_unary(parser)
+    let expr = parse_unary(parser)?;
+
+    if parser.matches(&[TokenType::Slash, TokenType::Star]) {
+        let operator = parser.previous().clone();
+        let right = parse_unary(parser)?;
+        return Ok(Expr::Binary{ operator, left: Box::new(expr), right: Box::new(right)});
+    }
+
+    Ok(expr)
 }
 
 // unary          → ( "!" | "-" ) unary
@@ -255,5 +271,30 @@ mod tests {
 
         let primary = parser.parse().unwrap();
         assert_eq!(primary.to_string(), "(! (! true))".to_string());
+    }
+
+    #[test]
+    fn test_parse_binary() {
+        let token_left = Token {
+            token_type: TokenType::Number,
+            lexeme: "40",
+            literal: Some(TokenValue::Number(40.0)),
+        };
+        let plus = Token {
+            token_type: TokenType::Plus,
+            lexeme: "+",
+            literal: None,
+        };
+        let token_right = Token {
+            token_type: TokenType::Number,
+            lexeme: "2",
+            literal: Some(TokenValue::Number(2.0)),
+        };
+        let tokens = vec![token_left, plus, token_right, Token::eof()];
+
+        let mut parser = Parser::new(tokens);
+
+        let primary = parser.parse().unwrap();
+        assert_eq!(primary.to_string(), "(+ 40.0 2.0)".to_string());
     }
 }
