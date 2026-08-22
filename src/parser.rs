@@ -98,12 +98,12 @@ fn parse_comparison<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
 
 // term           → factor ( ( "-" | "+" ) factor )* ;
 fn parse_term<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
-    let expr = parse_factor(parser)?;
+    let mut expr = parse_factor(parser)?;
 
-    if parser.matches(&[TokenType::Minus, TokenType::Plus]) {
+    while parser.matches(&[TokenType::Minus, TokenType::Plus]) {
         let operator = parser.previous().clone();
         let right = parse_factor(parser)?;
-        return Ok(Expr::Binary{operator, left: Box::new(expr), right: Box::new(right)})
+        expr = Expr::Binary{operator, left: Box::new(expr), right: Box::new(right)};
     }
 
     Ok(expr)
@@ -111,12 +111,12 @@ fn parse_term<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
 
 // factor         → unary ( ( "/" | "*" ) unary )* ;
 fn parse_factor<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
-    let expr = parse_unary(parser)?;
+    let mut expr = parse_unary(parser)?;
 
-    if parser.matches(&[TokenType::Slash, TokenType::Star]) {
+    while parser.matches(&[TokenType::Slash, TokenType::Star]) {
         let operator = parser.previous().clone();
         let right = parse_unary(parser)?;
-        return Ok(Expr::Binary{ operator, left: Box::new(expr), right: Box::new(right)});
+        expr = Expr::Binary{ operator, left: Box::new(expr), right: Box::new(right)};
     }
 
     Ok(expr)
@@ -137,7 +137,6 @@ fn parse_unary<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
 // primary        → NUMBER | STRING | "true" | "false" | "nil"
 //                | "(" expression ")" ;
 fn parse_primary<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
-    eprintln!("{}",parser.peek());
     if parser.matches(&[TokenType::Number]) {
         let n = parser
             .previous()
