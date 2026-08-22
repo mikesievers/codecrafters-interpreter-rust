@@ -93,7 +93,15 @@ fn parse_equality<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
 
 // comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 fn parse_comparison<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
-    parse_term(parser)
+    let mut expr = parse_term(parser)?;
+
+    while parser.matches(&[TokenType::Greater, TokenType::GreaterEqual, TokenType::Less, TokenType::LessEqual ]) {
+        let operator = parser.previous().clone();
+        let right = parse_term(parser)?;
+        expr = Expr::Binary{operator, left: Box::new(expr), right: Box::new(right)};
+    }
+
+    Ok(expr)
 }
 
 // term           → factor ( ( "-" | "+" ) factor )* ;
