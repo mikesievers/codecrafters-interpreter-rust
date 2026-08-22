@@ -109,6 +109,12 @@ fn parse_factor<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
 // unary          → ( "!" | "-" ) unary
 //                | primary ;
 fn parse_unary<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
+    if parser.matches(&[TokenType::Bang, TokenType::Minus]) {
+        let operator = parser.previous().clone();
+        let right = parse_unary(parser)?;
+        return Ok(Expr::Unary{ operator, right: Box::new(right) })
+    }
+
     parse_primary(parser)
 }
 
@@ -228,5 +234,25 @@ mod tests {
 
         let primary = parser.parse().unwrap();
         assert_eq!(primary.to_string(), "(group foo)".to_string());
+    }
+
+    #[test]
+    fn test_parse_unary() {
+        let bang = Token {
+            token_type: TokenType::Bang,
+            lexeme: "!",
+            literal: None,
+        };
+        let token_true = Token {
+            token_type: TokenType::True,
+            lexeme: "",
+            literal: None,
+        };
+        let tokens = vec![bang, token_true, Token::eof()];
+
+        let mut parser = Parser::new(tokens);
+
+        let primary = parser.parse().unwrap();
+        assert_eq!(primary.to_string(), "(! true)".to_string());
     }
 }
