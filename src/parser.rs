@@ -9,6 +9,7 @@ static EOF_TOKEN: Token<'static> = Token {
     literal: None,
 };
 
+#[derive(Debug)]
 pub struct Parser<'a> {
     tokens: Vec<Token<'a>>,
     current: usize,
@@ -71,13 +72,14 @@ impl<'a> Parser<'a> {
 // primary        → NUMBER | STRING | "true" | "false" | "nil"
 //                | "(" expression ")" ;
 fn parse_primary<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
-    if parser.matches(&[TokenType::Number]) {
-        let token = parser.peek();
-        let token_value = token
-            .literal
-            .clone()
-            .expect("Number token without literal must not exist");
-        return Ok(Expr::Literal(token_value));
+    let current_token = parser.peek();
+    if current_token.token_type == TokenType::Number {
+        return Ok(Expr::Literal(
+            current_token
+                .literal
+                .clone()
+                .expect("Number token without literal must not exist"),
+        ));
     }
 
     if parser.matches(&[TokenType::Nil]) {
@@ -101,7 +103,7 @@ mod tests {
     use crate::token::{Token, TokenType};
 
     #[test]
-    fn test_parse_primary() {
+    fn test_parse_primary_nil() {
         let token = Token {
             token_type: TokenType::Nil,
             lexeme: "nil",
@@ -111,7 +113,22 @@ mod tests {
 
         let mut parser = Parser::new(tokens);
 
-        let ast = parser.parse().unwrap();
-        assert_eq!(ast.to_string(), "nil".to_string());
+        let primary = parse_primary(&mut parser).unwrap();
+        assert_eq!(primary.to_string(), "nil".to_string());
+    }
+
+    #[test]
+    fn test_parse_primary_number() {
+        let token = Token {
+            token_type: TokenType::Number,
+            lexeme: "",
+            literal: Some(TokenValue::Number(42.0)),
+        };
+        let tokens = vec![token, Token::eof()];
+
+        let mut parser = Parser::new(tokens);
+
+        let primary = parse_primary(&mut parser).unwrap();
+        assert_eq!(primary.to_string(), "42.0".to_string());
     }
 }

@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Token<'a> {
     #[allow(clippy::struct_field_names)]
     pub token_type: TokenType,
@@ -8,7 +8,7 @@ pub struct Token<'a> {
     pub literal: Option<TokenValue<'a>>,
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TokenValue<'a> {
     String(&'a str),
     Number(f64),
