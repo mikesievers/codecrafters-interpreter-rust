@@ -6,7 +6,7 @@ pub enum Expr<'a> {
     Literal(TokenValue<'a>),
 }
 
-impl<'a> Display for Expr<'a> {
+impl Display for Expr<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let output = match self {
             Expr::Literal(token_value) => token_value.to_string(),

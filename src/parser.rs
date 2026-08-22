@@ -17,9 +17,10 @@ pub struct Parser<'a> {
 impl<'a> Parser<'a> {
     pub fn new(tokens: Vec<Token<'a>>) -> Self {
         // Make sure the tokens Vec ends with an Eof
-        if tokens.last() != Some(&EOF_TOKEN) {
-            panic!("The tokens vector must end with an Eof token");
-        }
+        assert!(
+            tokens.last() == Some(&EOF_TOKEN),
+            "The tokens vector must end with an Eof token"
+        );
 
         Parser { tokens, current: 0 }
     }
@@ -39,12 +40,12 @@ impl<'a> Parser<'a> {
         self.current == self.tokens.len() - 1
     }
 
-    fn peek(&self) -> &Token<'a> {
+    fn peek(&'_ self) -> &Token<'a> {
         // SAFETY: self.current is only ever incremented by self.advance,
         // and only if it is not already pointing to the last token
         // Also, the Parser panic()s if the tokens Vec does not contain one
         // (EOF) token
-        &self.tokens.get(self.current).unwrap()
+        self.tokens.get(self.current).unwrap()
     }
 
     fn previous(&self) -> &Token<'a> {
@@ -62,15 +63,23 @@ impl<'a> Parser<'a> {
         if token_types.contains(&self.tokens.get(self.current).unwrap().token_type) {
             self.advance();
             return true;
-        } else {
-            return false;
         }
+        false
     }
 }
 
 // primary        → NUMBER | STRING | "true" | "false" | "nil"
 //                | "(" expression ")" ;
 fn parse_primary<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
+    if parser.matches(&[TokenType::Number]) {
+        let token = parser.peek();
+        let token_value = token
+            .literal
+            .clone()
+            .expect("Number token without literal must not exist");
+        return Ok(Expr::Literal(token_value));
+    }
+
     if parser.matches(&[TokenType::Nil]) {
         return Ok(Expr::Literal(TokenValue::Nil));
     }

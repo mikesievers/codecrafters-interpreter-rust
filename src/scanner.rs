@@ -11,6 +11,7 @@ pub struct Scanner {
 }
 
 impl Scanner {
+    #[must_use]
     pub fn from_string(data: String) -> Self {
         Scanner {
             data,
@@ -18,6 +19,11 @@ impl Scanner {
         }
     }
 
+    /// Creates a scanner from the contents of a file.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file cannot be read.
     pub fn from_file(filename: &String) -> Result<Self> {
         let data = read_to_string(filename)?;
         Ok(Scanner {
@@ -41,7 +47,7 @@ impl Scanner {
                     if let Some(token) =
                         token_from_single_char(&self.data[byte_idx..byte_idx + c.len_utf8()]) =>
                 {
-                    tokens.push(token)
+                    tokens.push(token);
                 }
                 // '=' Equality / assignment
                 Some((byte_idx, '=')) => {
@@ -71,12 +77,13 @@ impl Scanner {
                 }
                 // '"' String
                 Some((byte_idx, '"')) => {
-                    match handle_string(&self.data, &mut tokens, &mut char_indices, byte_idx) {
-                        Some(n) => line_no += n,
-                        None => {
-                            eprintln!("[line {}] Error: Unterminated string.", line_no);
-                            self.lexical_errors_found = Some(true);
-                        }
+                    if let Some(n) =
+                        handle_string(&self.data, &mut tokens, &mut char_indices, byte_idx)
+                    {
+                        line_no += n;
+                    } else {
+                        eprintln!("[line {line_no}] Error: Unterminated string.");
+                        self.lexical_errors_found = Some(true);
                     }
                 }
                 // Number
@@ -84,13 +91,13 @@ impl Scanner {
                     handle_number(&self.data, &mut tokens, &mut char_indices, byte_idx);
                 }
                 // Identifier
-                Some((byte_idx, c)) if is_alpha(&c) => {
+                Some((byte_idx, c)) if is_alpha(c) => {
                     handle_identifier(&self.data, &mut tokens, &mut char_indices, byte_idx, c);
                 }
                 // -- Everthing else
                 // default: emit error message
                 Some((_byte_idx, c)) => {
-                    eprintln!("[line {}] Error: Unexpected character: {}", line_no, c);
+                    eprintln!("[line {line_no}] Error: Unexpected character: {c}");
                     self.lexical_errors_found = Some(true);
                 }
                 // No more chars -> EOF and break
@@ -104,16 +111,17 @@ impl Scanner {
         tokens
     }
 
+    #[must_use]
     pub fn lexing_failed(&self) -> Option<bool> {
         self.lexical_errors_found
     }
 }
 
-fn is_alpha(c: &char) -> bool {
-    ('a'..='z').contains(c) || ('A'..='Z').contains(c) || *c == '_'
+fn is_alpha(c: char) -> bool {
+    c.is_ascii_lowercase() || c.is_ascii_uppercase() || c == '_'
 }
 
-fn is_alpha_numeric(c: &char) -> bool {
+fn is_alpha_numeric(c: char) -> bool {
     is_alpha(c) || c.is_ascii_digit()
 }
 
@@ -129,7 +137,7 @@ fn handle_identifier<'a>(
 
     loop {
         match char_indices.peek() {
-            Some((byte_idx_next, c_next)) if is_alpha_numeric(c_next) => {
+            Some((byte_idx_next, c_next)) if is_alpha_numeric(*c_next) => {
                 byte_len += c_next.len_utf8();
                 char_indices.next();
             }
@@ -163,7 +171,7 @@ fn handle_number<'a>(
     // (0 is taken as an example, all digits assumed to occupy same amount of bytes)
     let mut byte_len = '0'.len_utf8();
     loop {
-        match char_indices.peek().cloned() {
+        match char_indices.peek().copied() {
             Some((_idx_next, c_next)) if c_next.is_ascii_digit() => {
                 // Next char is a digit - consume it and increment byte_len
                 byte_len += c_next.len_utf8();
@@ -244,7 +252,7 @@ fn handle_slash<'a>(
     // If the following char is also a slash, it's a comment.
     // Consume the rest of the line.
     // Otherwise, it's a simple slash
-    if let Some((_byte_idx_next, c_next)) = char_indices.peek().cloned()
+    if let Some((_byte_idx_next, c_next)) = char_indices.peek().copied()
         && c_next == '/'
     {
         // consume the rest of the line, this is a comment.
@@ -253,7 +261,7 @@ fn handle_slash<'a>(
             char_indices.next();
             match char_indices.peek() {
                 Some((_, c)) if *c == '\n' => break, // EOL
-                Some(_) => continue,                 // Any part of the comment
+                Some(_) => {}                        // Any part of the comment
                 None => break,                       // EOF
             }
         }
@@ -262,7 +270,7 @@ fn handle_slash<'a>(
             token_type: TokenType::Slash,
             lexeme: &data[byte_idx..byte_idx + '/'.len_utf8()],
             literal: None,
-        })
+        });
     }
 }
 
@@ -272,7 +280,7 @@ fn handle_greater<'a>(
     char_indices: &mut itertools::PeekNth<std::str::CharIndices<'a>>,
     byte_idx: usize,
 ) {
-    if let Some((byte_idx_next, c_next)) = char_indices.peek().cloned()
+    if let Some((byte_idx_next, c_next)) = char_indices.peek().copied()
         && c_next == '='
     {
         // consume the next char, which is confirmed to be '='
@@ -281,13 +289,13 @@ fn handle_greater<'a>(
             token_type: TokenType::GreaterEqual,
             lexeme: &data[byte_idx..byte_idx_next + '='.len_utf8()],
             literal: None,
-        })
+        });
     } else {
         tokens.push(Token {
             token_type: TokenType::Greater,
             lexeme: &data[byte_idx..byte_idx + '>'.len_utf8()],
             literal: None,
-        })
+        });
     }
 }
 
@@ -297,7 +305,7 @@ fn handle_less<'a>(
     char_indices: &mut itertools::PeekNth<std::str::CharIndices<'a>>,
     byte_idx: usize,
 ) {
-    if let Some((byte_idx_next, c_next)) = char_indices.peek().cloned()
+    if let Some((byte_idx_next, c_next)) = char_indices.peek().copied()
         && c_next == '='
     {
         // consume the next char, which is confirmed to be '='
@@ -306,13 +314,13 @@ fn handle_less<'a>(
             token_type: TokenType::LessEqual,
             lexeme: &data[byte_idx..byte_idx_next + '='.len_utf8()],
             literal: None,
-        })
+        });
     } else {
         tokens.push(Token {
             token_type: TokenType::Less,
             lexeme: &data[byte_idx..byte_idx + '<'.len_utf8()],
             literal: None,
-        })
+        });
     }
 }
 
@@ -322,7 +330,7 @@ fn handle_bang<'a>(
     char_indices: &mut itertools::PeekNth<std::str::CharIndices<'a>>,
     byte_idx: usize,
 ) {
-    if let Some((byte_idx_next, c_next)) = char_indices.peek().cloned()
+    if let Some((byte_idx_next, c_next)) = char_indices.peek().copied()
         && c_next == '='
     {
         // consume the next char, which is confirmed to be '='
@@ -331,13 +339,13 @@ fn handle_bang<'a>(
             token_type: TokenType::BangEqual,
             lexeme: &data[byte_idx..byte_idx_next + '='.len_utf8()],
             literal: None,
-        })
+        });
     } else {
         tokens.push(Token {
             token_type: TokenType::Bang,
             lexeme: &data[byte_idx..byte_idx + '!'.len_utf8()],
             literal: None,
-        })
+        });
     }
 }
 
@@ -347,7 +355,7 @@ fn handle_equal<'a>(
     char_indices: &mut itertools::PeekNth<std::str::CharIndices<'a>>,
     byte_idx: usize,
 ) {
-    if let Some((byte_idx_next, c_next)) = char_indices.peek().cloned()
+    if let Some((byte_idx_next, c_next)) = char_indices.peek().copied()
         && c_next == '='
     {
         // consume the next char, which is confirmed to be '='
@@ -356,17 +364,17 @@ fn handle_equal<'a>(
             token_type: TokenType::EqualEqual,
             lexeme: &data[byte_idx..byte_idx_next + '='.len_utf8()],
             literal: None,
-        })
+        });
     } else {
         tokens.push(Token {
             token_type: TokenType::Equal,
             lexeme: &data[byte_idx..byte_idx + '='.len_utf8()],
             literal: None,
-        })
+        });
     }
 }
 
-fn token_from_single_char<'a>(c: &'a str) -> Option<Token<'a>> {
+fn token_from_single_char(c: &str) -> Option<Token<'_>> {
     match c {
         "(" => Some(Token {
             token_type: TokenType::LeftParen,

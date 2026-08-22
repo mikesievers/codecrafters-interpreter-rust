@@ -2,6 +2,7 @@ use std::fmt::Display;
 
 #[derive(Clone, PartialEq)]
 pub struct Token<'a> {
+    #[allow(clippy::struct_field_names)]
     pub token_type: TokenType,
     pub lexeme: &'a str,
     pub literal: Option<TokenValue<'a>>,
@@ -15,11 +16,11 @@ pub enum TokenValue<'a> {
     Nil,
 }
 
-impl<'a> Display for TokenValue<'a> {
+impl Display for TokenValue<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let output = match self {
             TokenValue::String(s) => s.to_string(),
-            TokenValue::Number(n) => format!("{:1?}", n),
+            TokenValue::Number(n) => format!("{n:1?}"),
             TokenValue::Boolean(b) => b.to_string(),
             TokenValue::Nil => "nil".to_string(),
         };
@@ -27,7 +28,7 @@ impl<'a> Display for TokenValue<'a> {
     }
 }
 
-impl<'a> Token<'a> {
+impl Token<'_> {
     pub fn display(&self) -> String {
         let literal = match &self.literal {
             Some(t) => t.to_string(),

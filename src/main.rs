@@ -1,3 +1,4 @@
+#![warn(clippy::pedantic)]
 mod expr;
 mod parser;
 mod scanner;
@@ -5,8 +6,6 @@ mod token;
 
 use std::env;
 use std::process::ExitCode;
-
-use expr::Expr;
 
 use parser::Parser;
 pub use scanner::Scanner;
@@ -27,7 +26,7 @@ fn main() -> ExitCode {
             // eprintln!("Logs from your program will appear here!");
 
             let mut scanner = Scanner::from_file(filename)
-                .unwrap_or_else(|_| panic!("Could not open file {}", filename));
+                .unwrap_or_else(|_| panic!("Could not open file {filename}"));
 
             for token in scanner.tokenize() {
                 println!("{token}");
@@ -38,16 +37,16 @@ fn main() -> ExitCode {
         }
         "parse" => {
             let mut scanner = Scanner::from_file(filename)
-                .unwrap_or_else(|_| panic!("Could not open file {}", filename));
+                .unwrap_or_else(|_| panic!("Could not open file {filename}"));
 
             let mut parser = Parser::new(scanner.tokenize());
 
             let expr = parser.parse().expect("Parsing failed.");
-            println!("{}", expr);
+            println!("{expr}");
         }
 
         _ => {
-            eprintln!("Unknown command: {}", command);
+            eprintln!("Unknown command: {command}");
             return ExitCode::FAILURE;
         }
     }
