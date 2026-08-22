@@ -54,7 +54,7 @@ impl<'a> Parser<'a> {
             0 => &EOF_TOKEN,
             // SAFETY: self.current is > 0 here and only advanced through
             // advance, which ensures it is does not go out of bounds
-            _ => self.tokens.get(self.current).unwrap(),
+            _ => self.tokens.get(self.current - 1).unwrap(),
         }
     }
 
@@ -67,28 +67,37 @@ impl<'a> Parser<'a> {
         }
         false
     }
+
+    fn consume(&mut self, token_type: &TokenType) -> Result<(), ()> {
+        if self.peek().token_type == *token_type {
+            self.advance();
+            Ok(())
+        } else {
+            eprintln!("[line 1] Missing closing parenthesis");
+            Err(())
+        }
+    }
 }
 
 // primary        → NUMBER | STRING | "true" | "false" | "nil"
 //                | "(" expression ")" ;
 fn parse_primary<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
-    let current_token = parser.peek();
-    if current_token.token_type == TokenType::Number {
-        return Ok(Expr::Literal(
-            current_token
-                .literal
-                .clone()
-                .expect("Number token without literal must not exist"),
-        ));
+    if parser.matches(&[TokenType::Number]) {
+        let n = parser
+            .previous()
+            .literal
+            .clone()
+            .expect("Number token without literal must not exist");
+        return Ok(Expr::Literal(n));
     }
 
-    if current_token.token_type == TokenType::String {
-        return Ok(Expr::Literal(
-            current_token
-                .literal
-                .clone()
-                .expect("String token without literal must not exist"),
-        ));
+    if parser.matches(&[TokenType::String]) {
+        let s = parser
+            .previous()
+            .literal
+            .clone()
+            .expect("String token without literal must not exist");
+        return Ok(Expr::Literal(s));
     }
 
     if parser.matches(&[TokenType::Nil]) {
@@ -102,6 +111,13 @@ fn parse_primary<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
     if parser.matches(&[TokenType::False]) {
         return Ok(Expr::Literal(TokenValue::Boolean(false)));
     }
+
+    if parser.matches(&[TokenType::LeftParen]) {
+        let expr = parse_primary(parser)?;
+        parser.consume(&TokenType::RightParen)?;
+        return Ok(Expr::Grouping(Box::new(expr)));
+    }
+
     eprintln!("No matching primary found");
     Err(())
 }
@@ -154,5 +170,30 @@ mod tests {
 
         let primary = parse_primary(&mut parser).unwrap();
         assert_eq!(primary.to_string(), "42".to_string());
+    }
+
+    #[test]
+    fn test_parse_primary_grouping() {
+        let left_paren = Token {
+            token_type: TokenType::LeftParen,
+            lexeme: "(",
+            literal: None,
+        };
+        let token = Token {
+            token_type: TokenType::String,
+            lexeme: "",
+            literal: Some(TokenValue::String("foo")),
+        };
+        let right_paren = Token {
+            token_type: TokenType::RightParen,
+            lexeme: ")",
+            literal: None,
+        };
+        let tokens = vec![left_paren, token, right_paren, Token::eof()];
+
+        let mut parser = Parser::new(tokens);
+
+        let primary = parser.parse().unwrap();
+        assert_eq!(primary.to_string(), "(group foo)".to_string());
     }
 }

@@ -4,12 +4,14 @@ use crate::token::TokenValue;
 
 pub enum Expr<'a> {
     Literal(TokenValue<'a>),
+    Grouping(Box<Expr<'a>>),
 }
 
 impl Display for Expr<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let output = match self {
             Expr::Literal(token_value) => token_value.to_string(),
+            Expr::Grouping(expr) => format!("(group {expr})"),
         };
         write!(f, "{output}")
     }
