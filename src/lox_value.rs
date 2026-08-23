@@ -1,4 +1,4 @@
-use std::{fmt::Display, ops::{Neg, Not, Sub}};
+use std::{fmt::Display, ops::{Mul, Neg, Not, Sub}};
 
 // The LoxValue is almost identical to the TokenValue
 // The exception is the String - while the TokenValue
@@ -56,7 +56,18 @@ impl Sub for LoxValue {
     fn sub(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
             (LoxValue::Number(l), LoxValue::Number(r)) => LoxValue::Number(l-r),
-            _ => panic!("Trying to subtract incompatible values"),
+            _ => panic!("Trying to subtract incompatible value types"),
+        }
+    }
+}
+
+impl Mul for LoxValue {
+    type Output = LoxValue;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        match(self, rhs) {
+            (LoxValue::Number(l), LoxValue::Number(r)) => LoxValue::Number(l*r),
+            _ => panic!("Trying to multiply incompatible value types"),
         }
     }
 }
