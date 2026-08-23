@@ -51,12 +51,12 @@ impl Not for LoxValue {
 }
 
 impl Sub for LoxValue {
-    type Output = LoxValue;
+    type Output = Result<LoxValue, LoxError>;
 
     fn sub(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
-            (LoxValue::Number(l), LoxValue::Number(r)) => LoxValue::Number(l-r),
-            _ => panic!("Trying to subtract incompatible value types"),
+            (LoxValue::Number(l), LoxValue::Number(r)) => Ok(LoxValue::Number(l-r)),
+            _ => Err(LoxError::RuntimeError("Operands must be numbers.".to_string())),
         }
     }
 }
@@ -84,13 +84,13 @@ impl Div for LoxValue {
 }
 
 impl Add for LoxValue {
-    type Output = LoxValue;
+    type Output = Result<LoxValue, LoxError>;
 
     fn add(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
-            (LoxValue::String(l), LoxValue::String(r)) => LoxValue::String(l+&r),
-            (LoxValue::Number(l), LoxValue::Number(r)) => LoxValue::Number(l+r),
-            _ => panic!("Trying to add incompatible value types"),
+            (LoxValue::String(l), LoxValue::String(r)) => Ok(LoxValue::String(l+&r)),
+            (LoxValue::Number(l), LoxValue::Number(r)) => Ok(LoxValue::Number(l+r)),
+            _ => Err(LoxError::RuntimeError("Operands must be numbers.".to_string())),
         }
     }
 }

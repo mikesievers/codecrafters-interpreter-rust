@@ -45,8 +45,8 @@ impl Evaluate for Expr<'_> {
             } ,
             Expr::Binary { operator, left, right } => {
                 match operator.token_type {
-                    TokenType::Minus => Ok(left.evaluate()? - right.evaluate()?),
-                    TokenType::Plus => Ok(left.evaluate()? + right.evaluate()?),
+                    TokenType::Minus => Ok((left.evaluate()? - right.evaluate()?)?),
+                    TokenType::Plus => Ok((left.evaluate()? + right.evaluate()?)?),
                     TokenType::Star => Ok((left.evaluate()? * right.evaluate()?)?),
                     TokenType::Slash => Ok((left.evaluate()? / right.evaluate()?)?),
                     TokenType::EqualEqual => Ok(LoxValue::Boolean(left.evaluate()? == right.evaluate()?)),
