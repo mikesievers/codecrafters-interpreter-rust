@@ -62,23 +62,23 @@ impl Sub for LoxValue {
 }
 
 impl Mul for LoxValue {
-    type Output = LoxValue;
+    type Output = Result<LoxValue, LoxError>;
 
     fn mul(self, rhs: Self) -> Self::Output {
         match(self, rhs) {
-            (LoxValue::Number(l), LoxValue::Number(r)) => LoxValue::Number(l*r),
-            _ => panic!("Trying to multiply incompatible value types"),
+            (LoxValue::Number(l), LoxValue::Number(r)) => Ok(LoxValue::Number(l*r)),
+            _ => Err(LoxError::RuntimeError("Operands must be numbers.".to_string())),
         }
     }
 }
 
 impl Div for LoxValue {
-    type Output = LoxValue;
+    type Output = Result<LoxValue, LoxError>;
     
     fn div(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
-            (LoxValue::Number(l), LoxValue::Number(r)) => LoxValue::Number(l/r),
-            _ => panic!("Trying to divide incompatible value types"),
+            (LoxValue::Number(l), LoxValue::Number(r)) => Ok(LoxValue::Number(l/r)),
+            _ => Err(LoxError::RuntimeError("Operands must be numbers.".to_string())),
         }
     }
 }
