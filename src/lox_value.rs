@@ -1,4 +1,4 @@
-use std::{fmt::Display, ops::{Div, Mul, Neg, Not, Sub}};
+use std::{fmt::Display, ops::{Add, Div, Mul, Neg, Not, Sub}};
 
 // The LoxValue is almost identical to the TokenValue
 // The exception is the String - while the TokenValue
@@ -79,6 +79,18 @@ impl Div for LoxValue {
         match (self, rhs) {
             (LoxValue::Number(l), LoxValue::Number(r)) => LoxValue::Number(l/r),
             _ => panic!("Trying to divide incompatible value types"),
+        }
+    }
+}
+
+impl Add for LoxValue {
+    type Output = LoxValue;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        match (self, rhs) {
+            (LoxValue::String(l), LoxValue::String(r)) => LoxValue::String(l+&r),
+            (LoxValue::Number(l), LoxValue::Number(r)) => LoxValue::Number(l+r),
+            _ => panic!("Trying to add incompatible value types"),
         }
     }
 }

@@ -45,7 +45,7 @@ impl Evaluate for Expr<'_> {
             Expr::Binary { operator, left, right } => {
                 match operator.token_type {
                     TokenType::Minus => left.evaluate() - right.evaluate(),
-                    TokenType::Plus => todo!(),
+                    TokenType::Plus => left.evaluate() + right.evaluate(),
                     TokenType::Star => left.evaluate() * right.evaluate(),
                     TokenType::Slash => left.evaluate() / right.evaluate(),
                     TokenType::Equal => todo!(),
@@ -111,5 +111,21 @@ mod tests {
         let right = Box::new(Expr::Literal(TokenValue::Number(2.0)));
         let sub = Expr::Binary { operator: Token{ token_type: TokenType::Slash, lexeme: "/", literal: None}, left, right };
         assert_eq!(sub.evaluate(), LoxValue::Number(2.0));
+    }
+
+    #[test]
+    fn test_add_number() {
+        let left = Box::new(Expr::Literal(TokenValue::Number(40.0)));
+        let right = Box::new(Expr::Literal(TokenValue::Number(2.0)));
+        let sub = Expr::Binary { operator: Token{ token_type: TokenType::Plus, lexeme: "+", literal: None}, left, right };
+        assert_eq!(sub.evaluate(), LoxValue::Number(42.0));
+    }
+
+    #[test]
+    fn test_add_string() {
+        let left = Box::new(Expr::Literal(TokenValue::String("4")));
+        let right = Box::new(Expr::Literal(TokenValue::String("2")));
+        let sub = Expr::Binary { operator: Token{ token_type: TokenType::Plus, lexeme: "+", literal: None}, left, right };
+        assert_eq!(sub.evaluate(), LoxValue::String("42".to_string()));
     }
 }
