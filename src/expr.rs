@@ -51,14 +51,25 @@ impl Evaluate for Expr<'_> {
                     TokenType::Slash => Ok((left.evaluate()? / right.evaluate()?)?),
                     TokenType::EqualEqual => Ok(LoxValue::Boolean(left.evaluate()? == right.evaluate()?)),
                     TokenType::BangEqual => Ok(LoxValue::Boolean(left.evaluate()? != right.evaluate()?)),
-                    TokenType::Greater => Ok(LoxValue::Boolean(left.evaluate()? > right.evaluate()?)),
-                    TokenType::GreaterEqual => Ok(LoxValue::Boolean(left.evaluate()? >= right.evaluate()?)),
-                    TokenType::Less => Ok(LoxValue::Boolean(left.evaluate()? < right.evaluate()?)),
-                    TokenType::LessEqual => Ok(LoxValue::Boolean(left.evaluate()? <= right.evaluate()?)),
-                    _ => {panic!("Unexpected Binary operator encountered")},
+                    TokenType::Greater => compare_if_numbers(">", left.evaluate()?, right.evaluate()?),
+                    TokenType::GreaterEqual => compare_if_numbers(">=", left.evaluate()? , right.evaluate()?),
+                    TokenType::Less => compare_if_numbers("<", left.evaluate()? , right.evaluate()?),
+                    TokenType::LessEqual => compare_if_numbers("<=", left.evaluate()? , right.evaluate()?),
+
+                    _ => Err(LoxError::RuntimeError("Unexpected Binary operator encountered".to_string())),
                 }
             },
         }
+    }
+}
+
+fn compare_if_numbers(operator: &str, left: LoxValue, right: LoxValue) -> Result<LoxValue, LoxError> {
+    match (operator, left, right) {
+        (">", LoxValue::Number(l), LoxValue::Number(r)) => Ok(LoxValue::Boolean(l>r)),
+        (">=", LoxValue::Number(l), LoxValue::Number(r)) => Ok(LoxValue::Boolean(l>=r)),
+        ("<", LoxValue::Number(l), LoxValue::Number(r)) => Ok(LoxValue::Boolean(l<r)),
+        ("<=", LoxValue::Number(l), LoxValue::Number(r)) => Ok(LoxValue::Boolean(l<=r)),
+        _ => Err(LoxError::RuntimeError("Operands should be numbers.".to_string())),
     }
 }
 
