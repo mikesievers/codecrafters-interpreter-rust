@@ -1,5 +1,7 @@
 use std::{fmt::Display, ops::{Add, Div, Mul, Neg, Not, Sub}};
 
+use crate::lox_error::LoxError;
+
 // The LoxValue is almost identical to the TokenValue
 // The exception is the String - while the TokenValue
 // is expected not to duplicate String and refer to the
@@ -26,14 +28,12 @@ impl Display for LoxValue {
 }
 
 impl Neg for LoxValue {
-    type Output = LoxValue;
+    type Output = Result<LoxValue, LoxError>;
 
     fn neg(self) -> Self::Output {
         match self {
-            LoxValue::String(_) => todo!(),
-            LoxValue::Number(n) => LoxValue::Number(-n),
-            LoxValue::Boolean(_) => todo!(),
-            LoxValue::Nil => todo!(),
+            LoxValue::Number(n) => Ok(LoxValue::Number(-n)),
+            _ => Err(LoxError::RuntimeError("Operand must be a number.".to_string())),
         }
     }
 }
@@ -122,7 +122,7 @@ mod tests {
     #[test]
     fn test_neg_number () {
         let n = LoxValue::Number(1.1);
-        assert_eq!(-n, LoxValue::Number(-1.1));
+        assert_eq!((-n).unwrap(), LoxValue::Number(-1.1));
     }
 
     #[test]

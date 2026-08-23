@@ -5,6 +5,7 @@ mod scanner;
 mod token;
 mod lox_value;
 mod evaluate;
+mod lox_error;
 
 use std::env;
 use std::process::ExitCode;
@@ -13,6 +14,7 @@ use parser::Parser;
 pub use scanner::Scanner;
 
 use crate::evaluate::Evaluate;
+use crate::lox_error::LoxError;
 
 fn main() -> ExitCode {
     let args: Vec<String> = env::args().collect();
@@ -56,11 +58,20 @@ fn main() -> ExitCode {
                 .unwrap_or_else(|_| panic!("Could not open file {filename}"));
 
             let mut parser = Parser::new(scanner.tokenize());
+            let expr = parser.parse().expect("Parsing failed.");
 
-            if let Ok(expr) = parser.parse() { println!("{}", expr.evaluate()) } else { 
-                eprintln!("Parsing failed."); 
-                return ExitCode::from(65);
+            match expr.evaluate() {
+                Ok(output) => println!("{output}"),
+                Err(LoxError::RuntimeError(e)) => {
+                    eprintln!("{e}");
+                    return ExitCode::from(70);
+                },
+                Err(LoxError::SyntaxError(e)) => {
+                    eprintln!("{e}");
+                    return ExitCode::from(65);
+                },
             }
+
         }
 
         _ => {
