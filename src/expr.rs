@@ -1,6 +1,8 @@
 use std::fmt::Display;
 
+use crate::lox_value::LoxValue;
 use crate::token::{Token, TokenValue};
+use crate::evaluate::Evaluate;
 
 pub enum Expr<'a> {
     Literal(TokenValue<'a>),
@@ -21,10 +23,28 @@ impl Display for Expr<'_> {
     }
 }
 
+impl Evaluate for Expr<'_> {
+    fn evaluate(&self) -> crate::lox_value::LoxValue {
+        match self {
+            Expr::Literal(token_value) => {
+                match token_value {
+                    TokenValue::String(s) => LoxValue::String(s.to_string()),
+                    TokenValue::Number(n) => LoxValue::Number(*n),
+                    TokenValue::Boolean(b) => LoxValue::Boolean(*b),
+                    TokenValue::Nil => LoxValue::Nil,
+                }
+            },
+            Expr::Grouping(expr) => todo!(),
+            Expr::Unary { operator, right } => todo!(),
+            Expr::Binary { operator, left, right } => todo!(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::token::{TokenType, TokenValue};
+    use crate::{lox_value::LoxValue, token::{TokenType, TokenValue}};
 
     #[test]
     fn test_display_bool() {
@@ -39,5 +59,13 @@ mod tests {
         let right = Expr::Literal(TokenValue::Boolean(true));
         let expr = Expr::Unary{operator, right: Box::new(right)};
         assert_eq!(expr.to_string(), "(! true)");
+    }
+
+    // Evaluation
+    #[test]
+    fn test_eval_literal() {
+        let expr = Expr::Literal(TokenValue::Boolean(true));
+        assert_eq!(expr.evaluate(), LoxValue::Boolean(true));
+
     }
 }
