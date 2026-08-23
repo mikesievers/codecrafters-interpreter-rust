@@ -49,6 +49,7 @@ impl Evaluate for Expr<'_> {
                     TokenType::Star => left.evaluate() * right.evaluate(),
                     TokenType::Slash => left.evaluate() / right.evaluate(),
                     TokenType::EqualEqual => LoxValue::Boolean(left.evaluate() == right.evaluate()),
+                    TokenType::BangEqual => LoxValue::Boolean(left.evaluate() != right.evaluate()),
                     TokenType::Greater => LoxValue::Boolean(left.evaluate() > right.evaluate()),
                     TokenType::GreaterEqual => LoxValue::Boolean(left.evaluate() >= right.evaluate()),
                     TokenType::Less => LoxValue::Boolean(left.evaluate() < right.evaluate()),
