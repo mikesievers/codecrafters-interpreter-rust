@@ -1,4 +1,4 @@
-use std::{fmt::Display, ops::{Mul, Neg, Not, Sub}};
+use std::{fmt::Display, ops::{Div, Mul, Neg, Not, Sub}};
 
 // The LoxValue is almost identical to the TokenValue
 // The exception is the String - while the TokenValue
@@ -30,7 +30,7 @@ impl Neg for LoxValue {
 
     fn neg(self) -> Self::Output {
         match self {
-            LoxValue::String(s) => todo!(),
+            LoxValue::String(_) => todo!(),
             LoxValue::Number(n) => LoxValue::Number(-n),
             LoxValue::Boolean(_) => todo!(),
             LoxValue::Nil => todo!(),
@@ -68,6 +68,17 @@ impl Mul for LoxValue {
         match(self, rhs) {
             (LoxValue::Number(l), LoxValue::Number(r)) => LoxValue::Number(l*r),
             _ => panic!("Trying to multiply incompatible value types"),
+        }
+    }
+}
+
+impl Div for LoxValue {
+    type Output = LoxValue;
+    
+    fn div(self, rhs: Self) -> Self::Output {
+        match (self, rhs) {
+            (LoxValue::Number(l), LoxValue::Number(r)) => LoxValue::Number(l/r),
+            _ => panic!("Trying to divide incompatible value types"),
         }
     }
 }

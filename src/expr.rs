@@ -47,7 +47,7 @@ impl Evaluate for Expr<'_> {
                     TokenType::Minus => left.evaluate() - right.evaluate(),
                     TokenType::Plus => todo!(),
                     TokenType::Star => left.evaluate() * right.evaluate(),
-                    TokenType::Slash => todo!(),
+                    TokenType::Slash => left.evaluate() / right.evaluate(),
                     TokenType::Equal => todo!(),
                     TokenType::EqualEqual => todo!(),
                     TokenType::Greater => todo!(),
@@ -98,10 +98,18 @@ mod tests {
     }
 
     #[test]
-    fn test_slash_number() {
+    fn test_star_number() {
         let left = Box::new(Expr::Literal(TokenValue::Number(4.0)));
         let right = Box::new(Expr::Literal(TokenValue::Number(2.0)));
         let sub = Expr::Binary { operator: Token{ token_type: TokenType::Star, lexeme: "*", literal: None}, left, right };
         assert_eq!(sub.evaluate(), LoxValue::Number(8.0));
+    }
+
+    #[test]
+    fn test_slash_number() {
+        let left = Box::new(Expr::Literal(TokenValue::Number(4.0)));
+        let right = Box::new(Expr::Literal(TokenValue::Number(2.0)));
+        let sub = Expr::Binary { operator: Token{ token_type: TokenType::Slash, lexeme: "/", literal: None}, left, right };
+        assert_eq!(sub.evaluate(), LoxValue::Number(2.0));
     }
 }
