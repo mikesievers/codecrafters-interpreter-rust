@@ -34,7 +34,7 @@ impl Evaluate for Expr<'_> {
                     TokenValue::Nil => LoxValue::Nil,
                 }
             },
-            Expr::Grouping(expr) => todo!(),
+            Expr::Grouping(grp) => grp.evaluate(),
             Expr::Unary { operator, right } => todo!(),
             Expr::Binary { operator, left, right } => todo!(),
         }
