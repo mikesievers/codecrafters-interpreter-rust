@@ -5,7 +5,7 @@ use std::{fmt::Display, ops::{Add, Div, Mul, Neg, Not, Sub}};
 // is expected not to duplicate String and refer to the
 // program text instead, a LoxValue is expcted to hold
 // e.g. a concatenation of Strings.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum LoxValue {
     String(String),
     Number(f64),
@@ -91,6 +91,26 @@ impl Add for LoxValue {
             (LoxValue::String(l), LoxValue::String(r)) => LoxValue::String(l+&r),
             (LoxValue::Number(l), LoxValue::Number(r)) => LoxValue::Number(l+r),
             _ => panic!("Trying to add incompatible value types"),
+        }
+    }
+}
+
+impl PartialEq for LoxValue {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::String(l0), Self::String(r0)) => l0 == r0,
+            (Self::Number(l0), Self::Number(r0)) => l0 == r0,
+            (Self::Boolean(l0), Self::Boolean(r0)) => l0 == r0,
+            _ => core::mem::discriminant(self) == core::mem::discriminant(other),
+        }
+    }
+}
+
+impl PartialOrd for LoxValue {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        match (self, other) {
+            (LoxValue::Number(l), LoxValue::Number(r)) => l.partial_cmp(r),
+            _ => panic!("Trying to compare incompatible value types"),
         }
     }
 }

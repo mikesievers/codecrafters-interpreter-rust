@@ -48,12 +48,11 @@ impl Evaluate for Expr<'_> {
                     TokenType::Plus => left.evaluate() + right.evaluate(),
                     TokenType::Star => left.evaluate() * right.evaluate(),
                     TokenType::Slash => left.evaluate() / right.evaluate(),
-                    TokenType::Equal => todo!(),
-                    TokenType::EqualEqual => todo!(),
-                    TokenType::Greater => todo!(),
-                    TokenType::GreaterEqual => todo!(),
-                    TokenType::Less => todo!(),
-                    TokenType::LessEqual => todo!(),
+                    TokenType::EqualEqual => LoxValue::Boolean(left.evaluate() == right.evaluate()),
+                    TokenType::Greater => LoxValue::Boolean(left.evaluate() > right.evaluate()),
+                    TokenType::GreaterEqual => LoxValue::Boolean(left.evaluate() >= right.evaluate()),
+                    TokenType::Less => LoxValue::Boolean(left.evaluate() < right.evaluate()),
+                    TokenType::LessEqual => LoxValue::Boolean(left.evaluate() <= right.evaluate()),
                     _ => {panic!("Unexpected Binary operator encountered")},
                 }
             },
@@ -127,5 +126,21 @@ mod tests {
         let right = Box::new(Expr::Literal(TokenValue::String("2")));
         let sub = Expr::Binary { operator: Token{ token_type: TokenType::Plus, lexeme: "+", literal: None}, left, right };
         assert_eq!(sub.evaluate(), LoxValue::String("42".to_string()));
+    }
+
+    #[test]
+    fn test_greater() {
+        let left = Box::new(Expr::Literal(TokenValue::Number(4.0)));
+        let right = Box::new(Expr::Literal(TokenValue::Number(2.0)));
+        let sub = Expr::Binary { operator: Token{ token_type: TokenType::Greater, lexeme: ">", literal: None}, left, right };
+        assert_eq!(sub.evaluate(), LoxValue::Boolean(true));
+    }
+
+    #[test]
+    fn test_equal_equal() {
+        let left = Box::new(Expr::Literal(TokenValue::Number(4.0)));
+        let right = Box::new(Expr::Literal(TokenValue::Number(2.0)));
+        let sub = Expr::Binary { operator: Token{ token_type: TokenType::EqualEqual, lexeme: "==", literal: None}, left, right };
+        assert_eq!(sub.evaluate(), LoxValue::Boolean(false));
     }
 }
