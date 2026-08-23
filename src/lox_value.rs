@@ -17,7 +17,7 @@ impl Display for LoxValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let output = match self {
             LoxValue::String(s) => { s.clone()},
-            LoxValue::Number(n) => format!("{n:1?}"),
+            LoxValue::Number(n) => format!("{n}"),
             LoxValue::Boolean(b) => b.to_string(),
             LoxValue::Nil => "nil".to_string(),
         };
