@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, ops::{Neg, Not}};
 
 // The LoxValue is almost identical to the TokenValue
 // The exception is the String - while the TokenValue
@@ -22,5 +22,47 @@ impl Display for LoxValue {
             LoxValue::Nil => "nil".to_string(),
         };
         write!(f, "{output}")
+    }
+}
+
+impl Neg for LoxValue {
+    type Output = LoxValue;
+
+    fn neg(self) -> Self::Output {
+        match self {
+            LoxValue::String(s) => todo!(),
+            LoxValue::Number(n) => LoxValue::Number(-n),
+            LoxValue::Boolean(_) => todo!(),
+            LoxValue::Nil => todo!(),
+        }
+    }
+}
+
+impl Not for LoxValue {
+    type Output = LoxValue;
+
+    fn not(self) -> Self::Output {
+        match self {
+            LoxValue::String(_) | LoxValue::Number(_) => LoxValue::Boolean(false),
+            LoxValue::Boolean(b) => LoxValue::Boolean(!b),
+            LoxValue::Nil => LoxValue::Boolean(true),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::lox_value::LoxValue;
+
+    #[test]
+    fn test_neg_number () {
+        let n = LoxValue::Number(1.1);
+        assert_eq!(-n, LoxValue::Number(-1.1));
+    }
+
+    #[test]
+    fn test_not_truth() {
+        let b = LoxValue::Boolean(true);
+        assert_eq!(!b, LoxValue::Boolean(false));
     }
 }

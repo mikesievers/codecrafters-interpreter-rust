@@ -35,7 +35,13 @@ impl Evaluate for Expr<'_> {
                 }
             },
             Expr::Grouping(grp) => grp.evaluate(),
-            Expr::Unary { operator, right } => todo!(),
+            Expr::Unary { operator, right } => {
+                match operator.token_type {
+                    crate::token::TokenType::Minus => {-right.evaluate()},
+                    crate::token::TokenType::Bang => { !right.evaluate()},
+                    _ => {todo!()},
+                }
+            } ,
             Expr::Binary { operator, left, right } => todo!(),
         }
     }
