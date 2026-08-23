@@ -1,4 +1,4 @@
-use std::{fmt::Display, ops::{Neg, Not}};
+use std::{fmt::Display, ops::{Neg, Not, Sub}};
 
 // The LoxValue is almost identical to the TokenValue
 // The exception is the String - while the TokenValue
@@ -46,6 +46,17 @@ impl Not for LoxValue {
             LoxValue::String(_) | LoxValue::Number(_) => LoxValue::Boolean(false),
             LoxValue::Boolean(b) => LoxValue::Boolean(!b),
             LoxValue::Nil => LoxValue::Boolean(true),
+        }
+    }
+}
+
+impl Sub for LoxValue {
+    type Output = LoxValue;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        match (self, rhs) {
+            (LoxValue::Number(l), LoxValue::Number(r)) => LoxValue::Number(l-r),
+            _ => panic!("Trying to subtract incompatible values"),
         }
     }
 }

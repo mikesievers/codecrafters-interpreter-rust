@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use crate::lox_value::LoxValue;
-use crate::token::{Token, TokenValue};
+use crate::token::{Token, TokenType, TokenValue};
 use crate::evaluate::Evaluate;
 
 pub enum Expr<'a> {
@@ -37,12 +37,26 @@ impl Evaluate for Expr<'_> {
             Expr::Grouping(grp) => grp.evaluate(),
             Expr::Unary { operator, right } => {
                 match operator.token_type {
-                    crate::token::TokenType::Minus => {-right.evaluate()},
-                    crate::token::TokenType::Bang => { !right.evaluate()},
-                    _ => {todo!()},
+                    TokenType::Minus => {-right.evaluate()},
+                    TokenType::Bang => { !right.evaluate()},
+                    _ => {panic!("Unexpected Unary operator encountered")},
                 }
             } ,
-            Expr::Binary { operator, left, right } => todo!(),
+            Expr::Binary { operator, left, right } => {
+                match operator.token_type {
+                    TokenType::Minus => left.evaluate() - right.evaluate(),
+                    TokenType::Plus => todo!(),
+                    TokenType::Star => todo!(),
+                    TokenType::Slash => todo!(),
+                    TokenType::Equal => todo!(),
+                    TokenType::EqualEqual => todo!(),
+                    TokenType::Greater => todo!(),
+                    TokenType::GreaterEqual => todo!(),
+                    TokenType::Less => todo!(),
+                    TokenType::LessEqual => todo!(),
+                    _ => {panic!("Unexpected Binary operator encountered")},
+                }
+            },
         }
     }
 }
@@ -73,5 +87,13 @@ mod tests {
         let expr = Expr::Literal(TokenValue::Boolean(true));
         assert_eq!(expr.evaluate(), LoxValue::Boolean(true));
 
+    }
+
+    #[test]
+    fn test_minus_number() {
+        let left = Box::new(Expr::Literal(TokenValue::Number(44.0)));
+        let right = Box::new(Expr::Literal(TokenValue::Number(2.0)));
+        let sub = Expr::Binary { operator: Token{ token_type: TokenType::Minus, lexeme: "-", literal: None}, left, right };
+        assert_eq!(sub.evaluate(), LoxValue::Number(42.0));
     }
 }
