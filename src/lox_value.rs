@@ -110,7 +110,7 @@ impl PartialOrd for LoxValue {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         match (self, other) {
             (LoxValue::Number(l), LoxValue::Number(r)) => l.partial_cmp(r),
-            _ => panic!("Trying to compare incompatible value types"),
+            _ => None,
         }
     }
 }
