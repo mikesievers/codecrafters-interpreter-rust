@@ -41,13 +41,10 @@ fn main() -> ExitCode {
 
             let mut parser = Parser::new(scanner.tokenize());
 
-            match parser.parse() {
-             Ok(expr) => { println!("{expr}") } ,
-             Err(_) => { 
+            if let Ok(expr) = parser.parse() { println!("{expr}") } else { 
                 eprintln!("Parsing failed."); 
                 return ExitCode::from(65);
             }
-        }
 
         }
 

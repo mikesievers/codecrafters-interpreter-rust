@@ -88,7 +88,15 @@ fn parse_expression<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
 
 // equality       → comparison ( ( "!=" | "==" ) comparison )* ;
 fn parse_equality<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
-    parse_comparison(parser)
+    let expr = parse_comparison(parser)?;
+
+    if parser.matches(&[TokenType::BangEqual, TokenType::EqualEqual]) {
+        let operator = parser.previous().clone();
+        let right = parse_comparison(parser)?;
+        return Ok(Expr::Binary { operator, left: Box::new(expr), right: Box::new(right)});
+    }
+
+    Ok(expr)
 }
 
 // comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
