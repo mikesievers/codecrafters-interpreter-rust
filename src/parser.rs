@@ -1,5 +1,6 @@
 use crate::{
     expr::Expr,
+    stmt::Stmt,
     token::{Token, TokenType, TokenValue},
 };
 
@@ -26,8 +27,8 @@ impl<'a> Parser<'a> {
         Parser { tokens, current: 0 }
     }
 
-    pub fn parse(&mut self) -> Result<Expr<'_>, ()> {
-        parse_expression(self)
+    pub fn parse(&mut self) -> Result<Vec<Stmt<'_>>, ()> {
+        Ok(parse_program(self)?)
     }
 
     fn advance(&mut self) -> &Token<'a> {
@@ -81,6 +82,39 @@ impl<'a> Parser<'a> {
 
 // Implementation of the different steps of the grammar
 
+// program        → statement* EOF ;
+fn parse_program<'a>(parser: &mut Parser<'a>) -> Result<Vec<Stmt<'a>>, ()> {
+    let mut program = vec![];
+    while !parser.is_at_end() {
+        program.push(parse_statement(parser)?);
+    }
+
+    Ok(program)
+}
+
+// statement      → exprStmt
+//                | printStmt ;
+fn parse_statement<'a>(parser: &mut Parser<'a>) -> Result<Stmt<'a>, ()> {
+    if parser.matches(&[TokenType::Print]) {
+        return parse_print_statement(parser);
+    }
+    Ok(parse_expression_statement(parser))?
+}
+
+// exprStmt       → expression ";" ;
+fn parse_expression_statement<'a>(parser: &mut Parser<'a>) -> Result<Stmt<'a>, ()> {
+    let expression_statement = Stmt::Expression(parse_expression(parser)?);
+    parser.consume(&TokenType::Semicolon)?;
+    Ok(expression_statement)
+}
+
+// printStmt      → "print" expression ";" ;
+fn parse_print_statement<'a>(parser: &mut Parser<'a>) -> Result<Stmt<'a>, ()> {
+    let print_statement = Stmt::Print(parse_expression(parser)?);
+    parser.consume(&TokenType::Semicolon)?;
+    Ok(print_statement)
+}
+
 // expression     → equality ;
 fn parse_expression<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
     parse_equality(parser)
@@ -93,7 +127,11 @@ fn parse_equality<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
     if parser.matches(&[TokenType::BangEqual, TokenType::EqualEqual]) {
         let operator = parser.previous().clone();
         let right = parse_comparison(parser)?;
-        return Ok(Expr::Binary { operator, left: Box::new(expr), right: Box::new(right)});
+        return Ok(Expr::Binary {
+            operator,
+            left: Box::new(expr),
+            right: Box::new(right),
+        });
     }
 
     Ok(expr)
@@ -103,10 +141,19 @@ fn parse_equality<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
 fn parse_comparison<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
     let mut expr = parse_term(parser)?;
 
-    while parser.matches(&[TokenType::Greater, TokenType::GreaterEqual, TokenType::Less, TokenType::LessEqual ]) {
+    while parser.matches(&[
+        TokenType::Greater,
+        TokenType::GreaterEqual,
+        TokenType::Less,
+        TokenType::LessEqual,
+    ]) {
         let operator = parser.previous().clone();
         let right = parse_term(parser)?;
-        expr = Expr::Binary{operator, left: Box::new(expr), right: Box::new(right)};
+        expr = Expr::Binary {
+            operator,
+            left: Box::new(expr),
+            right: Box::new(right),
+        };
     }
 
     Ok(expr)
@@ -119,7 +166,11 @@ fn parse_term<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
     while parser.matches(&[TokenType::Minus, TokenType::Plus]) {
         let operator = parser.previous().clone();
         let right = parse_factor(parser)?;
-        expr = Expr::Binary{operator, left: Box::new(expr), right: Box::new(right)};
+        expr = Expr::Binary {
+            operator,
+            left: Box::new(expr),
+            right: Box::new(right),
+        };
     }
 
     Ok(expr)
@@ -132,7 +183,11 @@ fn parse_factor<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
     while parser.matches(&[TokenType::Slash, TokenType::Star]) {
         let operator = parser.previous().clone();
         let right = parse_unary(parser)?;
-        expr = Expr::Binary{ operator, left: Box::new(expr), right: Box::new(right)};
+        expr = Expr::Binary {
+            operator,
+            left: Box::new(expr),
+            right: Box::new(right),
+        };
     }
 
     Ok(expr)
@@ -144,7 +199,10 @@ fn parse_unary<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
     if parser.matches(&[TokenType::Bang, TokenType::Minus]) {
         let operator = parser.previous().clone();
         let right = parse_unary(parser)?;
-        return Ok(Expr::Unary{ operator, right: Box::new(right) })
+        return Ok(Expr::Unary {
+            operator,
+            right: Box::new(right),
+        });
     }
 
     parse_primary(parser)
@@ -265,7 +323,7 @@ mod tests {
         let mut parser = Parser::new(tokens);
 
         let primary = parser.parse().unwrap();
-        assert_eq!(primary.to_string(), "(group foo)".to_string());
+        assert_eq!(primary[0].to_string(), "(group foo)".to_string());
     }
 
     #[test]
@@ -285,7 +343,7 @@ mod tests {
         let mut parser = Parser::new(tokens);
 
         let primary = parser.parse().unwrap();
-        assert_eq!(primary.to_string(), "(! (! true))".to_string());
+        assert_eq!(primary[0].to_string(), "(! (! true))".to_string());
     }
 
     #[test]
@@ -310,6 +368,6 @@ mod tests {
         let mut parser = Parser::new(tokens);
 
         let primary = parser.parse().unwrap();
-        assert_eq!(primary.to_string(), "(+ 40.0 2.0)".to_string());
+        assert_eq!(primary[0].to_string(), "(+ 40.0 2.0)".to_string());
     }
 }
