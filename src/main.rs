@@ -64,10 +64,8 @@ fn main() -> ExitCode {
 
             let mut parser = Parser::new(tokens);
 
-            if let Ok(program) = parser.parse() {
-                for stmt in program {
-                    println!("{stmt}");
-                }
+            if let Ok(expr) = parser.parse_expression() {
+                println!("{expr}");
             } else {
                 eprintln!("Parsing failed.");
                 return ExitCode::from(65);
