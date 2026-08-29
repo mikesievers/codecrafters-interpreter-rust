@@ -32,6 +32,10 @@ impl<'a> Parser<'a> {
         parse_program(self)
     }
 
+    pub fn parse_expression(&mut self) -> Result<Expr<'_>, LoxError> {
+        parse_expression(self)
+    }
+
     fn advance(&mut self) -> &Token<'a> {
         if !(self.is_at_end()) {
             self.current += 1;
@@ -335,7 +339,13 @@ mod tests {
             lexeme: ")",
             literal: None,
         };
-        let tokens = vec![left_paren, token, right_paren, Token::semicolon(), Token::eof()];
+        let tokens = vec![
+            left_paren,
+            token,
+            right_paren,
+            Token::semicolon(),
+            Token::eof(),
+        ];
 
         let mut parser = Parser::new(tokens);
 

@@ -66,23 +66,18 @@ fn main() -> ExitCode {
                 .unwrap_or_else(|_| panic!("Could not open file {filename}"));
 
             let mut parser = Parser::new(scanner.tokenize());
-            let program = parser.parse().expect("Parsing failed.");
+            let expr = parser.parse_expression().expect("Parsing failed.");
 
-            if let Some(Stmt::Expression(expr)) = program.first() {
-                // The first line of the program is not an expression
-                match expr.evaluate() {
-                    Ok(output) => println!("{output}"),
-                    Err(LoxError::RuntimeError(e)) => {
-                        eprintln!("{e}");
-                        return ExitCode::from(EXIT_CODE_RUNTIME_ERROR);
-                    }
-                    Err(LoxError::SyntaxError(e)) => {
-                        eprintln!("{e}");
-                        return ExitCode::from(EXIT_CODE_SYNTAX_ERROR);
-                    }
+            match expr.evaluate() {
+                Ok(output) => println!("{output}"),
+                Err(LoxError::RuntimeError(e)) => {
+                    eprintln!("{e}");
+                    return ExitCode::from(EXIT_CODE_RUNTIME_ERROR);
                 }
-            } else {
-                return ExitCode::from(1);
+                Err(LoxError::SyntaxError(e)) => {
+                    eprintln!("{e}");
+                    return ExitCode::from(EXIT_CODE_SYNTAX_ERROR);
+                }
             }
         }
         "run" => {
