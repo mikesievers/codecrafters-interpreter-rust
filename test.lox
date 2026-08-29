@@ -1,5 +1,1 @@
-print "Hello world!";
-print 42;
-print true;
-print 12+12;
-print;
+"bar" < false

@@ -74,11 +74,11 @@ fn main() -> ExitCode {
                     Ok(output) => println!("{output}"),
                     Err(LoxError::RuntimeError(e)) => {
                         eprintln!("{e}");
-                        return ExitCode::from(70);
+                        return ExitCode::from(EXIT_CODE_RUNTIME_ERROR);
                     }
                     Err(LoxError::SyntaxError(e)) => {
                         eprintln!("{e}");
-                        return ExitCode::from(65);
+                        return ExitCode::from(EXIT_CODE_SYNTAX_ERROR);
                     }
                 }
             } else {
