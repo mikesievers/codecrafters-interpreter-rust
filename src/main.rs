@@ -16,7 +16,6 @@ pub use scanner::Scanner;
 
 use crate::evaluate::Evaluate;
 use crate::lox_error::LoxError;
-use crate::stmt::Stmt;
 
 const EXIT_CODE_SYNTAX_ERROR: u8 = 65;
 const EXIT_CODE_RUNTIME_ERROR: u8 = 70;
@@ -50,7 +49,20 @@ fn main() -> ExitCode {
             let mut scanner = Scanner::from_file(filename)
                 .unwrap_or_else(|_| panic!("Could not open file {filename}"));
 
-            let mut parser = Parser::new(scanner.tokenize());
+            // NOTE: The following is ugly:
+            // The tokens contains references to inside the scanner, from a mutable borrow
+            // That makes it impossible to call lexing_failed(), which would need an immutable borrow
+            // Possibly this will be fixed with Polonius
+            let _ = scanner.tokenize();
+
+            if matches!(scanner.lexing_failed(), Some(true)) {
+                return ExitCode::from(65);
+            }
+
+            // Now we need to tokenize again, this time to keep
+            let tokens = scanner.tokenize();
+
+            let mut parser = Parser::new(tokens);
 
             if let Ok(program) = parser.parse() {
                 for stmt in program {
