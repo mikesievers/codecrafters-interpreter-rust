@@ -18,6 +18,9 @@ use crate::evaluate::Evaluate;
 use crate::lox_error::LoxError;
 use crate::stmt::Stmt;
 
+const EXIT_CODE_SYNTAX_ERROR: u8 = 65;
+const EXIT_CODE_RUNTIME_ERROR: u8 = 70;
+
 fn main() -> ExitCode {
     let args: Vec<String> = env::args().collect();
     if args.len() < 3 {
@@ -87,18 +90,20 @@ fn main() -> ExitCode {
                 .unwrap_or_else(|_| panic!("Could not open file {filename}"));
 
             let mut parser = Parser::new(scanner.tokenize());
-            let program = parser.parse().expect("Parsing failed.");
+            let Ok(program) = parser.parse() else {
+                return ExitCode::from(EXIT_CODE_SYNTAX_ERROR);
+            };
 
             for stmt in program {
                 match stmt.execute() {
                     Ok(()) => (),
                     Err(LoxError::RuntimeError(e)) => {
                         eprintln!("{e}");
-                        return ExitCode::from(70);
+                        return ExitCode::from(EXIT_CODE_RUNTIME_ERROR);
                     }
                     Err(LoxError::SyntaxError(e)) => {
                         eprintln!("{e}");
-                        return ExitCode::from(65);
+                        return ExitCode::from(EXIT_CODE_SYNTAX_ERROR);
                     }
                 }
             }
