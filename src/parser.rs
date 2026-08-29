@@ -1,5 +1,6 @@
 use crate::{
     expr::Expr,
+    lox_error::LoxError,
     stmt::Stmt,
     token::{Token, TokenType, TokenValue},
 };
@@ -27,8 +28,8 @@ impl<'a> Parser<'a> {
         Parser { tokens, current: 0 }
     }
 
-    pub fn parse(&mut self) -> Result<Vec<Stmt<'_>>, ()> {
-        Ok(parse_program(self)?)
+    pub fn parse(&mut self) -> Result<Vec<Stmt<'_>>, LoxError> {
+        parse_program(self)
     }
 
     fn advance(&mut self) -> &Token<'a> {
@@ -69,13 +70,12 @@ impl<'a> Parser<'a> {
         false
     }
 
-    fn consume(&mut self, token_type: &TokenType) -> Result<(), ()> {
+    fn consume(&mut self, token_type: &TokenType) -> Result<(), LoxError> {
         if self.peek().token_type == *token_type {
             self.advance();
             Ok(())
         } else {
-            eprintln!("[line 1] Missing closing parenthesis");
-            Err(())
+            Err(LoxError::SyntaxError(format!("{token_type:?} expected")))
         }
     }
 }
@@ -83,7 +83,7 @@ impl<'a> Parser<'a> {
 // Implementation of the different steps of the grammar
 
 // program        → statement* EOF ;
-fn parse_program<'a>(parser: &mut Parser<'a>) -> Result<Vec<Stmt<'a>>, ()> {
+fn parse_program<'a>(parser: &mut Parser<'a>) -> Result<Vec<Stmt<'a>>, LoxError> {
     let mut program = vec![];
     while !parser.is_at_end() {
         program.push(parse_statement(parser)?);
@@ -94,7 +94,7 @@ fn parse_program<'a>(parser: &mut Parser<'a>) -> Result<Vec<Stmt<'a>>, ()> {
 
 // statement      → exprStmt
 //                | printStmt ;
-fn parse_statement<'a>(parser: &mut Parser<'a>) -> Result<Stmt<'a>, ()> {
+fn parse_statement<'a>(parser: &mut Parser<'a>) -> Result<Stmt<'a>, LoxError> {
     if parser.matches(&[TokenType::Print]) {
         return parse_print_statement(parser);
     }
@@ -102,26 +102,37 @@ fn parse_statement<'a>(parser: &mut Parser<'a>) -> Result<Stmt<'a>, ()> {
 }
 
 // exprStmt       → expression ";" ;
-fn parse_expression_statement<'a>(parser: &mut Parser<'a>) -> Result<Stmt<'a>, ()> {
+fn parse_expression_statement<'a>(parser: &mut Parser<'a>) -> Result<Stmt<'a>, LoxError> {
     let expression_statement = Stmt::Expression(parse_expression(parser)?);
     parser.consume(&TokenType::Semicolon)?;
     Ok(expression_statement)
 }
 
 // printStmt      → "print" expression ";" ;
-fn parse_print_statement<'a>(parser: &mut Parser<'a>) -> Result<Stmt<'a>, ()> {
+fn parse_print_statement<'a>(parser: &mut Parser<'a>) -> Result<Stmt<'a>, LoxError> {
     let print_statement = Stmt::Print(parse_expression(parser)?);
-    parser.consume(&TokenType::Semicolon)?;
-    Ok(print_statement)
+    match parser.consume(&TokenType::Semicolon) {
+        Ok(_) => Ok(print_statement),
+        Err(e) => {
+            eprintln!("[line 1] Expect semicolon");
+            Err(e)
+        }
+    }
 }
 
 // expression     → equality ;
-fn parse_expression<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
-    parse_equality(parser)
+fn parse_expression<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, LoxError> {
+    match parse_equality(parser) {
+        Ok(expression) => Ok(expression),
+        Err(e) => {
+            eprintln!("[line 1] Expected expression");
+            Err(e)
+        }
+    }
 }
 
 // equality       → comparison ( ( "!=" | "==" ) comparison )* ;
-fn parse_equality<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
+fn parse_equality<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, LoxError> {
     let expr = parse_comparison(parser)?;
 
     if parser.matches(&[TokenType::BangEqual, TokenType::EqualEqual]) {
@@ -138,7 +149,7 @@ fn parse_equality<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
 }
 
 // comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
-fn parse_comparison<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
+fn parse_comparison<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, LoxError> {
     let mut expr = parse_term(parser)?;
 
     while parser.matches(&[
@@ -160,7 +171,7 @@ fn parse_comparison<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
 }
 
 // term           → factor ( ( "-" | "+" ) factor )* ;
-fn parse_term<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
+fn parse_term<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, LoxError> {
     let mut expr = parse_factor(parser)?;
 
     while parser.matches(&[TokenType::Minus, TokenType::Plus]) {
@@ -177,7 +188,7 @@ fn parse_term<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
 }
 
 // factor         → unary ( ( "/" | "*" ) unary )* ;
-fn parse_factor<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
+fn parse_factor<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, LoxError> {
     let mut expr = parse_unary(parser)?;
 
     while parser.matches(&[TokenType::Slash, TokenType::Star]) {
@@ -195,7 +206,7 @@ fn parse_factor<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
 
 // unary          → ( "!" | "-" ) unary
 //                | primary ;
-fn parse_unary<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
+fn parse_unary<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, LoxError> {
     if parser.matches(&[TokenType::Bang, TokenType::Minus]) {
         let operator = parser.previous().clone();
         let right = parse_unary(parser)?;
@@ -210,7 +221,7 @@ fn parse_unary<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
 
 // primary        → NUMBER | STRING | "true" | "false" | "nil"
 //                | "(" expression ")" ;
-fn parse_primary<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
+fn parse_primary<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, LoxError> {
     if parser.matches(&[TokenType::Number]) {
         let n = parser
             .previous()
@@ -243,12 +254,18 @@ fn parse_primary<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, ()> {
 
     if parser.matches(&[TokenType::LeftParen]) {
         let expr = parse_expression(parser)?;
-        parser.consume(&TokenType::RightParen)?;
-        return Ok(Expr::Grouping(Box::new(expr)));
+        if let Ok(()) = parser.consume(&TokenType::RightParen) {
+            return Ok(Expr::Grouping(Box::new(expr)));
+        }
+        eprintln!("[line 1] Missing closing parenthesis.");
+        return Err(LoxError::SyntaxError(
+            "Missing closing parenthesis".to_string(),
+        ));
     }
 
-    eprintln!("No matching primary found");
-    Err(())
+    Err(LoxError::SyntaxError(
+        "No matching primary found".to_string(),
+    ))
 }
 
 #[cfg(test)]
@@ -318,7 +335,7 @@ mod tests {
             lexeme: ")",
             literal: None,
         };
-        let tokens = vec![left_paren, token, right_paren, Token::eof()];
+        let tokens = vec![left_paren, token, right_paren, Token::semicolon(), Token::eof()];
 
         let mut parser = Parser::new(tokens);
 
@@ -338,7 +355,13 @@ mod tests {
             lexeme: "",
             literal: None,
         };
-        let tokens = vec![bang.clone(), bang, token_true, Token::eof()];
+        let tokens = vec![
+            bang.clone(),
+            bang,
+            token_true,
+            Token::semicolon(),
+            Token::eof(),
+        ];
 
         let mut parser = Parser::new(tokens);
 
@@ -363,7 +386,13 @@ mod tests {
             lexeme: "2",
             literal: Some(TokenValue::Number(2.0)),
         };
-        let tokens = vec![token_left, plus, token_right, Token::eof()];
+        let tokens = vec![
+            token_left,
+            plus,
+            token_right,
+            Token::semicolon(),
+            Token::eof(),
+        ];
 
         let mut parser = Parser::new(tokens);
 

@@ -49,6 +49,13 @@ impl Token<'_> {
             literal: None,
         }
     }
+    pub fn semicolon() -> Self {
+        Token {
+            token_type: TokenType::Semicolon,
+            lexeme: ";",
+            literal: None,
+        }
+    }
 }
 
 impl Display for Token<'_> {
