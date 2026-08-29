@@ -1,6 +1,7 @@
 #![warn(clippy::pedantic)]
 mod evaluate;
 mod expr;
+mod interpreter;
 mod lox_error;
 mod lox_value;
 mod parser;
@@ -15,6 +16,7 @@ use parser::Parser;
 pub use scanner::Scanner;
 
 use crate::evaluate::Evaluate;
+use crate::interpreter::Interpreter;
 use crate::lox_error::LoxError;
 
 const EXIT_CODE_SYNTAX_ERROR: u8 = 65;
@@ -99,19 +101,15 @@ fn main() -> ExitCode {
                 return ExitCode::from(EXIT_CODE_SYNTAX_ERROR);
             };
 
-            for (idx, stmt) in program.iter().enumerate() {
-                match stmt.execute() {
-                    Ok(()) => (),
-                    Err(LoxError::RuntimeError(e)) => {
-                        eprintln!("{e}");
-                        eprintln!("[line {}]", idx + 1);
-                        return ExitCode::from(EXIT_CODE_RUNTIME_ERROR);
-                    }
-                    Err(LoxError::SyntaxError(e)) => {
-                        eprintln!("{e}");
-                        eprintln!("[line {}]", idx + 1);
-                        return ExitCode::from(EXIT_CODE_SYNTAX_ERROR);
-                    }
+            let mut interpreter = Interpreter {};
+
+            match interpreter.interpret(&program) {
+                Ok(()) => (),
+                Err(LoxError::RuntimeError(_)) => {
+                    return ExitCode::from(EXIT_CODE_RUNTIME_ERROR);
+                }
+                Err(LoxError::SyntaxError(_)) => {
+                    return ExitCode::from(EXIT_CODE_SYNTAX_ERROR);
                 }
             }
         }
