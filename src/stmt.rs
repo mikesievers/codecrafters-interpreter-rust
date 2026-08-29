@@ -19,7 +19,10 @@ impl Display for Stmt<'_> {
 impl Stmt<'_> {
     pub fn execute(&self) -> Result<(), LoxError> {
         match self {
-            Stmt::Expression(_expr) => Ok(()),
+            Stmt::Expression(expr) => match expr.evaluate() {
+                Ok(_) => Ok(()),
+                Err(e) => Err(e),
+            },
             Stmt::Print(expr) => {
                 println!("{}", expr.evaluate()?);
                 Ok(())

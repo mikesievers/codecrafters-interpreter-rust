@@ -99,15 +99,17 @@ fn main() -> ExitCode {
                 return ExitCode::from(EXIT_CODE_SYNTAX_ERROR);
             };
 
-            for stmt in program {
+            for (idx, stmt) in program.iter().enumerate() {
                 match stmt.execute() {
                     Ok(()) => (),
                     Err(LoxError::RuntimeError(e)) => {
                         eprintln!("{e}");
+                        eprintln!("[line {}]", idx + 1);
                         return ExitCode::from(EXIT_CODE_RUNTIME_ERROR);
                     }
                     Err(LoxError::SyntaxError(e)) => {
                         eprintln!("{e}");
+                        eprintln!("[line {}]", idx + 1);
                         return ExitCode::from(EXIT_CODE_SYNTAX_ERROR);
                     }
                 }
