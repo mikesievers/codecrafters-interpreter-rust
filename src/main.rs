@@ -1,4 +1,5 @@
 #![warn(clippy::pedantic)]
+mod environment;
 mod evaluate;
 mod expr;
 mod interpreter;
@@ -105,7 +106,7 @@ fn main() -> ExitCode {
                 }
             };
 
-            let mut interpreter = Interpreter {};
+            let mut interpreter = Interpreter::new();
 
             match interpreter.interpret(&program) {
                 Ok(()) => (),
