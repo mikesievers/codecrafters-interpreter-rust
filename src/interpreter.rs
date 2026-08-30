@@ -1,4 +1,11 @@
-use crate::{environment::Environment, evaluate::Evaluate, lox_error::LoxError, stmt::Stmt};
+use crate::{
+    environment::Environment,
+    expr::Expr,
+    lox_error::LoxError,
+    lox_value::LoxValue,
+    stmt::Stmt,
+    token::{TokenType, TokenValue},
+};
 
 pub struct Interpreter {
     env: Environment,
@@ -32,17 +39,18 @@ impl Interpreter {
 
     fn execute(&mut self, stmt: &Stmt) -> Result<(), LoxError> {
         match stmt {
-            Stmt::Expression(expr) => match expr.evaluate() {
+            Stmt::Expression(expr) => match self.evaluate(expr) {
                 Ok(_) => Ok(()),
                 Err(e) => Err(e),
             },
             Stmt::Print(expr) => {
-                println!("{}", expr.evaluate()?);
+                println!("{}", self.evaluate(expr)?);
                 Ok(())
             }
             Stmt::Var { name, initializer } => {
                 if let Some(expr) = initializer {
-                    self.env.put(*name, Some(expr.evaluate()?));
+                    let value = self.evaluate(expr)?;
+                    self.env.put(*name, Some(value));
                     Ok(())
                 } else {
                     self.env.put(*name, None);
@@ -50,5 +58,221 @@ impl Interpreter {
                 }
             }
         }
+    }
+
+    pub fn evaluate(&mut self, expr: &Expr) -> Result<LoxValue, LoxError> {
+        match expr {
+            Expr::Literal(token_value) => match token_value {
+                TokenValue::String(s) => Ok(LoxValue::String(s.to_string())),
+                TokenValue::Number(n) => Ok(LoxValue::Number(*n)),
+                TokenValue::Boolean(b) => Ok(LoxValue::Boolean(*b)),
+                TokenValue::Nil => Ok(LoxValue::Nil),
+            },
+            Expr::Grouping(grp) => self.evaluate(grp),
+            Expr::Unary { operator, right } => match operator.token_type {
+                TokenType::Minus => Ok((-self.evaluate(right)?)?),
+                TokenType::Bang => Ok(!self.evaluate(right)?),
+                _ => Err(LoxError::SyntaxError(
+                    "Unexpected Unary Operator found".to_string(),
+                )),
+            },
+            Expr::Binary {
+                operator,
+                left,
+                right,
+            } => match operator.token_type {
+                TokenType::Minus => Ok((self.evaluate(left)? - self.evaluate(right)?)?),
+                TokenType::Plus => Ok((self.evaluate(left)? + self.evaluate(right)?)?),
+                TokenType::Star => Ok((self.evaluate(left)? * self.evaluate(right)?)?),
+                TokenType::Slash => Ok((self.evaluate(left)? / self.evaluate(right)?)?),
+                TokenType::EqualEqual => Ok(LoxValue::Boolean(
+                    self.evaluate(left)? == self.evaluate(right)?,
+                )),
+                TokenType::BangEqual => Ok(LoxValue::Boolean(
+                    self.evaluate(left)? != self.evaluate(right)?,
+                )),
+                TokenType::Greater => {
+                    compare_if_numbers(">", self.evaluate(left)?, self.evaluate(right)?)
+                }
+                TokenType::GreaterEqual => {
+                    compare_if_numbers(">=", self.evaluate(left)?, self.evaluate(right)?)
+                }
+                TokenType::Less => {
+                    compare_if_numbers("<", self.evaluate(left)?, self.evaluate(right)?)
+                }
+                TokenType::LessEqual => {
+                    compare_if_numbers("<=", self.evaluate(left)?, self.evaluate(right)?)
+                }
+
+                _ => Err(LoxError::RuntimeError(
+                    "Unexpected Binary operator encountered".to_string(),
+                )),
+            },
+            Expr::Variable(_) => todo!(),
+        }
+    }
+}
+
+fn compare_if_numbers(
+    operator: &str,
+    left: LoxValue,
+    right: LoxValue,
+) -> Result<LoxValue, LoxError> {
+    match (operator, left, right) {
+        (">", LoxValue::Number(l), LoxValue::Number(r)) => Ok(LoxValue::Boolean(l > r)),
+        (">=", LoxValue::Number(l), LoxValue::Number(r)) => Ok(LoxValue::Boolean(l >= r)),
+        ("<", LoxValue::Number(l), LoxValue::Number(r)) => Ok(LoxValue::Boolean(l < r)),
+        ("<=", LoxValue::Number(l), LoxValue::Number(r)) => Ok(LoxValue::Boolean(l <= r)),
+        _ => Err(LoxError::RuntimeError(
+            "Operands should be numbers.".to_string(),
+        )),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::token::Token;
+
+    // Evaluation
+    #[test]
+    fn test_eval_literal() {
+        let mut interpreter = Interpreter::new();
+        let expr = Expr::Literal(TokenValue::Boolean(true));
+        assert_eq!(
+            interpreter.evaluate(&expr).unwrap(),
+            LoxValue::Boolean(true)
+        );
+    }
+
+    #[test]
+    fn test_minus_number() {
+        let left = Box::new(Expr::Literal(TokenValue::Number(44.0)));
+        let right = Box::new(Expr::Literal(TokenValue::Number(2.0)));
+        let sub = Expr::Binary {
+            operator: Token {
+                token_type: TokenType::Minus,
+                lexeme: "-",
+                literal: None,
+            },
+            left,
+            right,
+        };
+        let mut interpreter = Interpreter::new();
+        assert_eq!(interpreter.evaluate(&sub).unwrap(), LoxValue::Number(42.0));
+    }
+
+    #[test]
+    fn test_star_number() {
+        let left = Box::new(Expr::Literal(TokenValue::Number(4.0)));
+        let right = Box::new(Expr::Literal(TokenValue::Number(2.0)));
+        let sub = Expr::Binary {
+            operator: Token {
+                token_type: TokenType::Star,
+                lexeme: "*",
+                literal: None,
+            },
+            left,
+            right,
+        };
+
+        let mut interpreter = Interpreter::new();
+        assert_eq!(interpreter.evaluate(&sub).unwrap(), LoxValue::Number(8.0));
+    }
+
+    #[test]
+    fn test_slash_number() {
+        let left = Box::new(Expr::Literal(TokenValue::Number(4.0)));
+        let right = Box::new(Expr::Literal(TokenValue::Number(2.0)));
+        let sub = Expr::Binary {
+            operator: Token {
+                token_type: TokenType::Slash,
+                lexeme: "/",
+                literal: None,
+            },
+            left,
+            right,
+        };
+
+        let mut interpreter = Interpreter::new();
+        assert_eq!(interpreter.evaluate(&sub).unwrap(), LoxValue::Number(2.0));
+    }
+
+    #[test]
+    fn test_add_number() {
+        let left = Box::new(Expr::Literal(TokenValue::Number(40.0)));
+        let right = Box::new(Expr::Literal(TokenValue::Number(2.0)));
+        let sub = Expr::Binary {
+            operator: Token {
+                token_type: TokenType::Plus,
+                lexeme: "+",
+                literal: None,
+            },
+            left,
+            right,
+        };
+
+        let mut interpreter = Interpreter::new();
+        assert_eq!(interpreter.evaluate(&sub).unwrap(), LoxValue::Number(42.0));
+    }
+
+    #[test]
+    fn test_add_string() {
+        let left = Box::new(Expr::Literal(TokenValue::String("4")));
+        let right = Box::new(Expr::Literal(TokenValue::String("2")));
+        let sub = Expr::Binary {
+            operator: Token {
+                token_type: TokenType::Plus,
+                lexeme: "+",
+                literal: None,
+            },
+            left,
+            right,
+        };
+
+        let mut interpreter = Interpreter::new();
+        assert_eq!(
+            interpreter.evaluate(&sub).unwrap(),
+            LoxValue::String("42".to_string())
+        );
+    }
+
+    #[test]
+    fn test_greater() {
+        let left = Box::new(Expr::Literal(TokenValue::Number(4.0)));
+        let right = Box::new(Expr::Literal(TokenValue::Number(2.0)));
+        let sub = Expr::Binary {
+            operator: Token {
+                token_type: TokenType::Greater,
+                lexeme: ">",
+                literal: None,
+            },
+            left,
+            right,
+        };
+
+        let mut interpreter = Interpreter::new();
+        assert_eq!(interpreter.evaluate(&sub).unwrap(), LoxValue::Boolean(true));
+    }
+
+    #[test]
+    fn test_equal_equal() {
+        let left = Box::new(Expr::Literal(TokenValue::Number(4.0)));
+        let right = Box::new(Expr::Literal(TokenValue::Number(2.0)));
+        let sub = Expr::Binary {
+            operator: Token {
+                token_type: TokenType::EqualEqual,
+                lexeme: "==",
+                literal: None,
+            },
+            left,
+            right,
+        };
+
+        let mut interpreter = Interpreter::new();
+        assert_eq!(
+            interpreter.evaluate(&sub).unwrap(),
+            LoxValue::Boolean(false)
+        );
     }
 }

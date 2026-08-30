@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::{evaluate::Evaluate, expr::Expr, lox_error::LoxError};
+use crate::expr::Expr;
 
 pub enum Stmt<'a> {
     Expression(Expr<'a>),

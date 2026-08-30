@@ -1,6 +1,5 @@
 #![warn(clippy::pedantic)]
 mod environment;
-mod evaluate;
 mod expr;
 mod interpreter;
 mod lox_error;
@@ -16,7 +15,6 @@ use std::process::ExitCode;
 use parser::Parser;
 pub use scanner::Scanner;
 
-use crate::evaluate::Evaluate;
 use crate::interpreter::Interpreter;
 use crate::lox_error::LoxError;
 
@@ -75,7 +73,9 @@ fn main() -> ExitCode {
             let mut parser = Parser::new(tokens);
             let expr = parser.parse_expression().expect("Parsing failed.");
 
-            match expr.evaluate() {
+            let mut interpreter = Interpreter::new();
+
+            match interpreter.evaluate(&expr) {
                 Ok(output) => println!("{output}"),
                 Err(LoxError::RuntimeError(e)) => {
                     eprintln!("{e}");
