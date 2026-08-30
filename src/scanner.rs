@@ -30,6 +30,7 @@ impl Scanner {
     //
     // Returns the tokens together with a flag indicating whether any
     // lexical errors were encountered.
+    #[must_use]
     pub fn tokenize(&self) -> (Vec<Token<'_>>, bool) {
         let mut line_no: u32 = 1;
         let mut tokens: Vec<Token<'_>> = vec![];
