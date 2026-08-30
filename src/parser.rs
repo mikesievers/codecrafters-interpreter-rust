@@ -74,10 +74,10 @@ impl<'a> Parser<'a> {
         false
     }
 
-    fn consume(&mut self, token_type: &TokenType) -> Result<(), LoxError> {
+    fn consume(&mut self, token_type: &TokenType) -> Result<&Token<'a>, LoxError> {
         if self.peek().token_type == *token_type {
             self.advance();
-            Ok(())
+            Ok(self.previous())
         } else {
             Err(LoxError::SyntaxError(format!("{token_type:?} expected")))
         }
@@ -86,14 +86,49 @@ impl<'a> Parser<'a> {
 
 // Implementation of the different steps of the grammar
 
-// program        → statement* EOF ;
+// program        → declaration* EOF ;
 fn parse_program<'a>(parser: &mut Parser<'a>) -> Result<Vec<Stmt<'a>>, LoxError> {
     let mut program = vec![];
     while !parser.is_at_end() {
-        program.push(parse_statement(parser)?);
+        program.push(parse_declaration(parser)?);
     }
 
     Ok(program)
+}
+
+// declaration    → varDecl
+//                | statement ;
+fn parse_declaration<'a>(parser: &mut Parser<'a>) -> Result<Stmt<'a>, LoxError> {
+    if parser.matches(&[TokenType::Var]) {
+        return parse_var_declaration(parser);
+    }
+    parse_statement(parser)
+}
+
+// varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
+fn parse_var_declaration<'a>(parser: &mut Parser<'a>) -> Result<Stmt<'a>, LoxError> {
+    let Ok(name_token) = parser.consume(&TokenType::Identifier) else {
+        return Err(LoxError::SyntaxError("Expect variable name.".to_string()));
+    };
+    let Some(TokenValue::String(name)) = name_token.literal else {
+        return Err(LoxError::SyntaxError(
+            "Identifier Token must have a literal.".to_string(),
+        ));
+    };
+
+    let initializer = if parser.matches(&[TokenType::Equal]) {
+        Some(parse_expression(parser)?)
+    } else {
+        None
+    };
+
+    let _ = parser.consume(&TokenType::Semicolon) else {
+        return Err(LoxError::SyntaxError(
+            "Expect ';' after variable declaration.".to_string(),
+        ));
+    };
+
+    Ok(Stmt::Var { name, initializer })
 }
 
 // statement      → exprStmt
@@ -258,13 +293,23 @@ fn parse_primary<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, LoxError> {
 
     if parser.matches(&[TokenType::LeftParen]) {
         let expr = parse_expression(parser)?;
-        if let Ok(()) = parser.consume(&TokenType::RightParen) {
+        if let Ok(_) = parser.consume(&TokenType::RightParen) {
             return Ok(Expr::Grouping(Box::new(expr)));
         }
         eprintln!("[line 1] Missing closing parenthesis.");
         return Err(LoxError::SyntaxError(
             "Missing closing parenthesis".to_string(),
         ));
+    }
+
+    if parser.matches(&[TokenType::Identifier]) {
+        let name_token = parser.previous().clone();
+        let Some(TokenValue::String(name)) = name_token.literal else {
+            return Err(LoxError::SyntaxError(
+                "Identifiers must have a literal".to_string(),
+            ));
+        };
+        return Ok(Expr::Variable(name));
     }
 
     Err(LoxError::SyntaxError(
