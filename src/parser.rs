@@ -289,7 +289,7 @@ fn parse_primary<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, LoxError> {
 
     if parser.matches(&[TokenType::LeftParen]) {
         let expr = parse_expression(parser)?;
-        if let Ok(_) = parser.consume(&TokenType::RightParen) {
+        if parser.consume(&TokenType::RightParen).is_ok() {
             return Ok(Expr::Grouping(Box::new(expr)));
         }
         eprintln!("[line 1] Missing closing parenthesis.");
