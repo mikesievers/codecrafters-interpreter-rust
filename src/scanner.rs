@@ -7,16 +7,12 @@ use crate::token::{Token, TokenType, TokenValue};
 
 pub struct Scanner {
     data: String,
-    lexical_errors_found: Option<bool>,
 }
 
 impl Scanner {
     #[must_use]
     pub fn from_string(data: String) -> Self {
-        Scanner {
-            data,
-            lexical_errors_found: None,
-        }
+        Scanner { data }
     }
 
     /// Creates a scanner from the contents of a file.
@@ -26,18 +22,18 @@ impl Scanner {
     /// Returns an error if the file cannot be read.
     pub fn from_file(filename: &String) -> Result<Self> {
         let data = read_to_string(filename)?;
-        Ok(Scanner {
-            data,
-            lexical_errors_found: None,
-        })
+        Ok(Scanner { data })
     }
 
     // The lexemes are references into self.data, therefore
     // the returned tokens borrow from self while they are in use.
-    pub fn tokenize(&mut self) -> Vec<Token<'_>> {
+    //
+    // Returns the tokens together with a flag indicating whether any
+    // lexical errors were encountered.
+    pub fn tokenize(&self) -> (Vec<Token<'_>>, bool) {
         let mut line_no: u32 = 1;
         let mut tokens: Vec<Token<'_>> = vec![];
-        self.lexical_errors_found = Some(false);
+        let mut had_errors = false;
 
         let mut char_indices = peek_nth(self.data.char_indices());
 
@@ -83,7 +79,7 @@ impl Scanner {
                         line_no += n;
                     } else {
                         eprintln!("[line {line_no}] Error: Unterminated string.");
-                        self.lexical_errors_found = Some(true);
+                        had_errors = true;
                     }
                 }
                 // Number
@@ -98,7 +94,7 @@ impl Scanner {
                 // default: emit error message
                 Some((_byte_idx, c)) => {
                     eprintln!("[line {line_no}] Error: Unexpected character: {c}");
-                    self.lexical_errors_found = Some(true);
+                    had_errors = true;
                 }
                 // No more chars -> EOF and break
                 None => {
@@ -108,12 +104,7 @@ impl Scanner {
             }
         }
 
-        tokens
-    }
-
-    #[must_use]
-    pub fn lexing_failed(&self) -> Option<bool> {
-        self.lexical_errors_found
+        (tokens, had_errors)
     }
 }
 
@@ -438,14 +429,12 @@ mod tests {
 
     #[test]
     fn test_scanner() {
-        let mut scanner = Scanner::from_string("()".into());
+        let scanner = Scanner::from_string("()".into());
 
+        let (tokens, had_errors) = scanner.tokenize();
+        assert!(!had_errors);
         assert_eq!(
-            scanner
-                .tokenize()
-                .iter()
-                .map(|token| { token.display() })
-                .collect_vec(),
+            tokens.iter().map(|token| { token.display() }).collect_vec(),
             vec!["LEFT_PAREN ( null", "RIGHT_PAREN ) null", "EOF  null"]
         );
     }

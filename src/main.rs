@@ -37,32 +37,25 @@ fn main() -> ExitCode {
             // You can use print statements as follows for debugging, they'll be visible when running tests.
             // eprintln!("Logs from your program will appear here!");
 
-            let mut scanner = Scanner::from_file(filename)
+            let scanner = Scanner::from_file(filename)
                 .unwrap_or_else(|_| panic!("Could not open file {filename}"));
 
-            for token in scanner.tokenize() {
+            let (tokens, had_errors) = scanner.tokenize();
+            for token in &tokens {
                 println!("{token}");
             }
-            if matches!(scanner.lexing_failed(), Some(true)) {
+            if had_errors {
                 return ExitCode::from(65);
             }
         }
         "parse" => {
-            let mut scanner = Scanner::from_file(filename)
+            let scanner = Scanner::from_file(filename)
                 .unwrap_or_else(|_| panic!("Could not open file {filename}"));
 
-            // NOTE: The following is ugly:
-            // The tokens contains references to inside the scanner, from a mutable borrow
-            // That makes it impossible to call lexing_failed(), which would need an immutable borrow
-            // Possibly this will be fixed with Polonius
-            let _ = scanner.tokenize();
-
-            if matches!(scanner.lexing_failed(), Some(true)) {
+            let (tokens, had_errors) = scanner.tokenize();
+            if had_errors {
                 return ExitCode::from(65);
             }
-
-            // Now we need to tokenize again, this time to keep
-            let tokens = scanner.tokenize();
 
             let mut parser = Parser::new(tokens);
 
@@ -74,10 +67,11 @@ fn main() -> ExitCode {
             }
         }
         "evaluate" => {
-            let mut scanner = Scanner::from_file(filename)
+            let scanner = Scanner::from_file(filename)
                 .unwrap_or_else(|_| panic!("Could not open file {filename}"));
 
-            let mut parser = Parser::new(scanner.tokenize());
+            let (tokens, _) = scanner.tokenize();
+            let mut parser = Parser::new(tokens);
             let expr = parser.parse_expression().expect("Parsing failed.");
 
             match expr.evaluate() {
@@ -93,11 +87,16 @@ fn main() -> ExitCode {
             }
         }
         "run" => {
-            let mut scanner = Scanner::from_file(filename)
+            let scanner = Scanner::from_file(filename)
                 .unwrap_or_else(|_| panic!("Could not open file {filename}"));
 
-            let mut parser = Parser::new(scanner.tokenize());
+            let (tokens, had_errors) = scanner.tokenize();
+            if had_errors {
+                eprintln!("Token scanning produced errors, not continuing.");
+                return ExitCode::from(EXIT_CODE_SYNTAX_ERROR);
+            }
 
+            let mut parser = Parser::new(tokens);
             let program = match parser.parse() {
                 Ok(program) => program,
                 Err(e) => {
