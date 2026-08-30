@@ -110,10 +110,10 @@ fn main() -> ExitCode {
 
             match interpreter.interpret(&program) {
                 Ok(()) => (),
-                Err(LoxError::RuntimeError(e)) => {
+                Err(LoxError::RuntimeError(_)) => {
                     return ExitCode::from(EXIT_CODE_RUNTIME_ERROR);
                 }
-                Err(LoxError::SyntaxError(e)) => {
+                Err(LoxError::SyntaxError(_)) => {
                     return ExitCode::from(EXIT_CODE_SYNTAX_ERROR);
                 }
             }
