@@ -1,10 +1,10 @@
 use crate::{environment::Environment, evaluate::Evaluate, lox_error::LoxError, stmt::Stmt};
 
-pub struct Interpreter<'a> {
-    env: Environment<'a>,
+pub struct Interpreter {
+    env: Environment,
 }
 
-impl<'a> Interpreter<'a> {
+impl Interpreter {
     pub fn new() -> Self {
         Interpreter {
             env: Environment::new(),
@@ -40,7 +40,15 @@ impl<'a> Interpreter<'a> {
                 println!("{}", expr.evaluate()?);
                 Ok(())
             }
-            Stmt::Var { name, initializer } => todo!(),
+            Stmt::Var { name, initializer } => {
+                if let Some(expr) = initializer {
+                    self.env.put(*name, Some(expr.evaluate()?));
+                    Ok(())
+                } else {
+                    self.env.put(*name, None);
+                    Ok(())
+                }
+            }
         }
     }
 }
