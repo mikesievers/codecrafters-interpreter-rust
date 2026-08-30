@@ -97,18 +97,23 @@ fn main() -> ExitCode {
                 .unwrap_or_else(|_| panic!("Could not open file {filename}"));
 
             let mut parser = Parser::new(scanner.tokenize());
-            let Ok(program) = parser.parse() else {
-                return ExitCode::from(EXIT_CODE_SYNTAX_ERROR);
+
+            let program = match parser.parse() {
+                Ok(program) => program,
+                Err(e) => {
+                    eprintln!("Parsing failed: {e}");
+                    return ExitCode::from(EXIT_CODE_SYNTAX_ERROR);
+                }
             };
 
             let mut interpreter = Interpreter {};
 
             match interpreter.interpret(&program) {
                 Ok(()) => (),
-                Err(LoxError::RuntimeError(_)) => {
+                Err(LoxError::RuntimeError(e)) => {
                     return ExitCode::from(EXIT_CODE_RUNTIME_ERROR);
                 }
-                Err(LoxError::SyntaxError(_)) => {
+                Err(LoxError::SyntaxError(e)) => {
                     return ExitCode::from(EXIT_CODE_SYNTAX_ERROR);
                 }
             }

@@ -110,11 +110,7 @@ fn parse_var_declaration<'a>(parser: &mut Parser<'a>) -> Result<Stmt<'a>, LoxErr
     let Ok(name_token) = parser.consume(&TokenType::Identifier) else {
         return Err(LoxError::SyntaxError("Expect variable name.".to_string()));
     };
-    let Some(TokenValue::String(name)) = name_token.literal else {
-        return Err(LoxError::SyntaxError(
-            "Identifier Token must have a literal.".to_string(),
-        ));
-    };
+    let name = name_token.lexeme;
 
     let initializer = if parser.matches(&[TokenType::Equal]) {
         Some(parse_expression(parser)?)
@@ -122,7 +118,7 @@ fn parse_var_declaration<'a>(parser: &mut Parser<'a>) -> Result<Stmt<'a>, LoxErr
         None
     };
 
-    let _ = parser.consume(&TokenType::Semicolon) else {
+    let Ok(_) = parser.consume(&TokenType::Semicolon) else {
         return Err(LoxError::SyntaxError(
             "Expect ';' after variable declaration.".to_string(),
         ));
@@ -303,13 +299,7 @@ fn parse_primary<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, LoxError> {
     }
 
     if parser.matches(&[TokenType::Identifier]) {
-        let name_token = parser.previous().clone();
-        let Some(TokenValue::String(name)) = name_token.literal else {
-            return Err(LoxError::SyntaxError(
-                "Identifiers must have a literal".to_string(),
-            ));
-        };
-        return Ok(Expr::Variable(name));
+        return Ok(Expr::Variable(parser.previous().lexeme));
     }
 
     Err(LoxError::SyntaxError(
