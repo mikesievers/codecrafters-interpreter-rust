@@ -2,3 +2,5 @@ print "41";
 var a = "42";
 print a;
 print "41" + a;
+var b;
+print b;

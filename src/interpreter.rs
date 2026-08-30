@@ -110,7 +110,7 @@ impl Interpreter {
             },
             Expr::Variable(name) => match self.env.get(name)? {
                 Some(val) => Ok(val),
-                None => Err(LoxError::RuntimeError("Variable not initialized".into())),
+                None => Ok(LoxValue::Nil),
             },
         }
     }
