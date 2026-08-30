@@ -1,4 +1,4 @@
-use crate::{environment::Environment, lox_error::LoxError, stmt::Stmt};
+use crate::{environment::Environment, evaluate::Evaluate, lox_error::LoxError, stmt::Stmt};
 
 pub struct Interpreter<'a> {
     env: Environment<'a>,
@@ -13,7 +13,7 @@ impl<'a> Interpreter<'a> {
 
     pub fn interpret(&mut self, program: &[Stmt]) -> Result<(), LoxError> {
         for (idx, stmt) in program.iter().enumerate() {
-            match stmt.execute() {
+            match self.execute(stmt) {
                 Ok(()) => (),
                 Err(LoxError::RuntimeError(e)) => {
                     eprintln!("{e}");
@@ -28,5 +28,19 @@ impl<'a> Interpreter<'a> {
             }
         }
         Ok(())
+    }
+
+    fn execute(&mut self, stmt: &Stmt) -> Result<(), LoxError> {
+        match stmt {
+            Stmt::Expression(expr) => match expr.evaluate() {
+                Ok(_) => Ok(()),
+                Err(e) => Err(e),
+            },
+            Stmt::Print(expr) => {
+                println!("{}", expr.evaluate()?);
+                Ok(())
+            }
+            Stmt::Var { name, initializer } => todo!(),
+        }
     }
 }

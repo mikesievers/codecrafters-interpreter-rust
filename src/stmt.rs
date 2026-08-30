@@ -23,20 +23,3 @@ impl Display for Stmt<'_> {
         }
     }
 }
-
-// TODO: Move to Interpreter and then delete here
-impl Stmt<'_> {
-    pub fn execute(&self) -> Result<(), LoxError> {
-        match self {
-            Stmt::Expression(expr) => match expr.evaluate() {
-                Ok(_) => Ok(()),
-                Err(e) => Err(e),
-            },
-            Stmt::Print(expr) => {
-                println!("{}", expr.evaluate()?);
-                Ok(())
-            }
-            Stmt::Var { name, initializer } => todo!(),
-        }
-    }
-}
