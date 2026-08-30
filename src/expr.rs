@@ -31,7 +31,7 @@ impl Display for Expr<'_> {
                 left,
                 right,
             } => format!("({} {left} {right})", operator.lexeme),
-            Expr::Variable(name) => format!("{name}"),
+            Expr::Variable(name) => name.to_string(),
         };
         write!(f, "{output}")
     }
