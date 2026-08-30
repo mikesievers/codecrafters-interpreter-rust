@@ -108,7 +108,10 @@ impl Interpreter {
                     "Unexpected Binary operator encountered".to_string(),
                 )),
             },
-            Expr::Variable(_) => todo!(),
+            Expr::Variable(name) => match self.env.get(name)? {
+                Some(val) => Ok(val),
+                None => Err(LoxError::RuntimeError("Variable not initialized".into())),
+            },
         }
     }
 }
