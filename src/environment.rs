@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, hash_map::Entry};
 
 use crate::{lox_error::LoxError, lox_value::LoxValue};
 
@@ -15,6 +15,24 @@ impl Environment {
 
     pub fn put<T: Into<String>>(&mut self, name: T, value: Option<LoxValue>) {
         self.values.insert(name.into(), value);
+    }
+
+    pub fn assign<T: Into<String>>(
+        &mut self,
+        name: T,
+        value: Option<LoxValue>,
+    ) -> Result<(), LoxError> {
+        let name_str: String = name.into();
+
+        match self.values.entry(name_str) {
+            Entry::Occupied(mut entry) => {
+                *entry.get_mut() = value;
+                Ok(())
+            }
+            Entry::Vacant(vacant) => Err(LoxError::RuntimeError(
+                format!("Unknown variable: {}", vacant.key()),
+            )),
+        }
     }
 
     pub fn get<T: AsRef<str>>(&self, name: &T) -> Result<Option<LoxValue>, LoxError> {

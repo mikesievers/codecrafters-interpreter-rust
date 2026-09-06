@@ -155,15 +155,45 @@ fn parse_print_statement<'a>(parser: &mut Parser<'a>) -> Result<Stmt<'a>, LoxErr
     }
 }
 
-// expression     → equality ;
+// NEW:
+// expression     → assignment ;
 fn parse_expression<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, LoxError> {
-    match parse_equality(parser) {
+    match parse_assignment(parser) {
         Ok(expression) => Ok(expression),
         Err(e) => {
             eprintln!("[line 1] Expected expression");
             Err(e)
         }
     }
+}
+
+// assignment     → IDENTIFIER "=" assignment
+//                | equality ;
+fn parse_assignment<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, LoxError> {
+    let expr = parse_equality(parser)?;
+
+    if parser.matches(&[TokenType::Equal]) {
+        let equals = parser.previous();
+        // Remember what the equals part is in case it needs to be returned in the error
+        let equals_string = equals.to_string();
+        let value = parse_assignment(parser)?;
+
+        match expr {
+            Expr::Variable(name) => {
+                return Ok(Expr::Assign {
+                    name,
+                    value: Box::new(value),
+                });
+            }
+            _ => {
+                return Err(LoxError::SyntaxError(format!(
+                    "Invalid assignment target {equals_string}"
+                )));
+            }
+        }
+    }
+
+    Ok(expr)
 }
 
 // equality       → comparison ( ( "!=" | "==" ) comparison )* ;
@@ -311,6 +341,36 @@ fn parse_primary<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, LoxError> {
 mod tests {
     use super::*;
     use crate::token::{Token, TokenType};
+
+    #[test]
+    fn test_assignment() {
+        let var_a = Token {
+            token_type: TokenType::Identifier,
+            lexeme: "a",
+            literal: None,
+        };
+        let equal = Token {
+            token_type: TokenType::Equal,
+            lexeme: "=",
+            literal: None,
+        };
+        let fourtytwo = Token {
+            token_type: TokenType::Number,
+            lexeme: "42.0",
+            literal: Some(TokenValue::Number(42.0)),
+        };
+
+        let mut parser = Parser::new(vec![var_a.clone(), equal, fourtytwo, Token::eof()]);
+        let assignment = parse_assignment(&mut parser).unwrap();
+
+        assert_eq!(
+            assignment,
+            Expr::Assign {
+                name: var_a.lexeme,
+                value: Box::new(Expr::Literal(TokenValue::Number(42.0)))
+            }
+        );
+    }
 
     #[test]
     fn test_parse_primary_nil() {

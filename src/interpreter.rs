@@ -112,6 +112,11 @@ impl Interpreter {
                 Some(val) => Ok(val),
                 None => Ok(LoxValue::Nil),
             },
+            Expr::Assign { name, value } => {
+                let evaluated_value = self.evaluate(value)?;
+                self.env.assign(*name, Some(evaluated_value))?;
+                self.evaluate(&Expr::Variable(name))
+            }
         }
     }
 }

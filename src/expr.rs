@@ -2,6 +2,7 @@ use std::fmt::Display;
 
 use crate::token::{Token, TokenValue};
 
+#[derive(Debug, PartialEq)]
 pub enum Expr<'a> {
     Literal(TokenValue<'a>),
     Grouping(Box<Expr<'a>>),
@@ -15,6 +16,10 @@ pub enum Expr<'a> {
         right: Box<Expr<'a>>,
     },
     Variable(&'a str),
+    Assign {
+        name: &'a str,
+        value: Box<Expr<'a>>,
+    },
 }
 
 impl Display for Expr<'_> {
@@ -29,6 +34,7 @@ impl Display for Expr<'_> {
                 right,
             } => format!("({} {left} {right})", operator.lexeme),
             Expr::Variable(name) => name.to_string(),
+            Expr::Assign { name, value } => format!("({name}={value}"),
         };
         write!(f, "{output}")
     }

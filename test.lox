@@ -1,6 +1,6 @@
-print "41";
-var a = "42";
-print a;
-print "41" + a;
-var b;
-print b;
+var a = 7;
+var b = 5;
+print a*b+7;
+print !!true;
+var c;
+print a=b=c=3;
