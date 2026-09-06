@@ -101,7 +101,10 @@ mod tests {
         // Take the enclosing env out of the inner one and let the inner one expire
         // "a" should not be shadowed any more
         // "b" should be unchanged
-        let outer = inner.enclosing.take().unwrap();
+        let outer = inner
+            .enclosing
+            .take()
+            .expect("Inner environment must have an enclosing env");
         assert_eq!(outer.get(&"a").unwrap(), Some(fourtytwo.clone()));
         assert_eq!(outer.get(&"b").unwrap(), Some(fourtytwo));
         // "c" should have been overwritten through the inner env
