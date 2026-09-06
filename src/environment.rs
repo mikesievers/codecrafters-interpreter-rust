@@ -33,15 +33,18 @@ impl Environment {
     ) -> Result<(), LoxError> {
         let name_str: String = name.into();
 
-        match self.values.entry(name_str) {
+        match self.values.entry(name_str.clone()) {
             Entry::Occupied(mut entry) => {
                 *entry.get_mut() = value;
                 Ok(())
             }
-            Entry::Vacant(vacant) => Err(LoxError::RuntimeError(format!(
-                "Unknown variable: {}",
-                vacant.key()
-            ))),
+            Entry::Vacant(vacant) => match self.enclosing {
+                Some(ref mut env) => env.assign(name_str, value),
+                None => Err(LoxError::RuntimeError(format!(
+                    "Unknown variable: {}",
+                    vacant.key()
+                ))),
+            },
         }
     }
 
@@ -74,17 +77,21 @@ mod tests {
     }
 
     #[test]
-    fn test_enclosing() {
+    fn test_enclosingd() {
         // Define an outer environment and seed it
         let mut outer = Environment::new();
         let fourtytwo = LoxValue::Number(42.0);
         outer.put("a", Some(fourtytwo.clone()));
         outer.put("b", Some(fourtytwo.clone()));
+        outer.put("c", Some(fourtytwo.clone()));
 
         // Define an inner environment that shadows "a"
         let mut inner = Environment::new_enclosed(outer);
         let twentythree = LoxValue::Number(23.0);
         inner.put("a", Some(twentythree.clone()));
+        // Write into "c", which only exists in the enclosing env
+        let one = LoxValue::Number(1.0);
+        inner.assign("c", Some(one.clone())).unwrap();
 
         // "a" is from the inner env, shadowed
         assert_eq!(inner.get(&"a").unwrap(), Some(twentythree.clone()));
@@ -97,5 +104,7 @@ mod tests {
         let outer = inner.enclosing.take().unwrap();
         assert_eq!(outer.get(&"a").unwrap(), Some(fourtytwo.clone()));
         assert_eq!(outer.get(&"b").unwrap(), Some(fourtytwo));
+        // "c" should have been overwritten through the inner env
+        assert_eq!(outer.get(&"c").unwrap(), Some(one));
     }
 }
