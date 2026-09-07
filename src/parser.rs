@@ -74,6 +74,10 @@ impl<'a> Parser<'a> {
         false
     }
 
+    fn check(&self, token_type: &TokenType) -> bool {
+        self.peek().token_type == *token_type
+    }
+
     fn consume(&mut self, token_type: &TokenType) -> Result<&Token<'a>, LoxError> {
         if self.peek().token_type == *token_type {
             self.advance();
@@ -128,12 +132,26 @@ fn parse_var_declaration<'a>(parser: &mut Parser<'a>) -> Result<Stmt<'a>, LoxErr
 }
 
 // statement      → exprStmt
-//                | printStmt ;
+//                | printStmt
+//                | block ;
 fn parse_statement<'a>(parser: &mut Parser<'a>) -> Result<Stmt<'a>, LoxError> {
     if parser.matches(&[TokenType::Print]) {
         return parse_print_statement(parser);
     }
+    if parser.matches(&[TokenType::LeftBrace]) {
+        return parse_block(parser);
+    }
     Ok(parse_expression_statement(parser))?
+}
+
+// block          → "{" declaration* "}" ;
+fn parse_block<'a>(parser: &mut Parser<'a>) -> Result<Stmt<'a>, LoxError> {
+    let mut stmts = vec![];
+    while !parser.check(&TokenType::RightBrace) && !parser.is_at_end() {
+        stmts.push(parse_declaration(parser)?);
+    }
+    parser.consume(&TokenType::RightBrace)?;
+    Ok(Stmt::Block(stmts))
 }
 
 // exprStmt       → expression ";" ;

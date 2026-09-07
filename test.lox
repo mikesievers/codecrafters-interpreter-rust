@@ -1,6 +1,9 @@
-var a = 7;
-var b = 5;
-print a*b+7;
-print !!true;
-var c;
-print a=b=c=3;
+var b = 42;
+{
+    var a = 1;
+}
+{
+    var b=2;
+    print b;
+}
+print b;
