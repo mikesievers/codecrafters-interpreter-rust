@@ -8,13 +8,13 @@ use crate::{
 };
 
 pub struct Interpreter {
-    env: Environment,
+    env: Option<Environment>,
 }
 
 impl Interpreter {
     pub fn new() -> Self {
         Interpreter {
-            env: Environment::new(),
+            env: Some(Environment::new()),
         }
     }
 
@@ -50,12 +50,42 @@ impl Interpreter {
             Stmt::Var { name, initializer } => {
                 if let Some(expr) = initializer {
                     let value = self.evaluate(expr)?;
-                    self.env.put(*name, Some(value));
+                    self.env
+                        .as_mut()
+                        .expect("Interpreter must have an Environment")
+                        .put(*name, Some(value));
                     Ok(())
                 } else {
-                    self.env.put(*name, None);
+                    self.env
+                        .as_mut()
+                        .expect("Interpreter must have an Environment")
+                        .put(*name, None);
                     Ok(())
                 }
+            }
+            Stmt::Block(stmts) => {
+                // Create new env
+                // making the old env the enclosing env
+                let outer_env = self
+                    .env
+                    .take()
+                    .expect("Interpreter must have an Environment");
+                self.env = Some(Environment::new_enclosed(outer_env));
+                // Execute statements
+                for stmt in stmts {
+                    self.execute(stmt)?;
+                }
+                // recreate old env
+                let enclosing = self
+                    .env
+                    .as_mut()
+                    .expect("Interpreter must have an Environment")
+                    .take_enclosing()
+                    .expect(
+                        "At end of block, the environment from the start must still be present",
+                    );
+                self.env = Some(*enclosing);
+                Ok(())
             }
         }
     }
@@ -108,13 +138,23 @@ impl Interpreter {
                     "Unexpected Binary operator encountered".to_string(),
                 )),
             },
-            Expr::Variable(name) => match self.env.get(name)? {
-                Some(val) => Ok(val),
-                None => Ok(LoxValue::Nil),
-            },
+            Expr::Variable(name) => {
+                match self
+                    .env
+                    .as_ref()
+                    .expect("Interpreter must have an env")
+                    .get(name)?
+                {
+                    Some(val) => Ok(val),
+                    None => Ok(LoxValue::Nil),
+                }
+            }
             Expr::Assign { name, value } => {
                 let evaluated_value = self.evaluate(value)?;
-                self.env.assign(*name, Some(evaluated_value))?;
+                self.env
+                    .as_mut()
+                    .expect("Interpreter must have an env")
+                    .assign(*name, Some(evaluated_value))?;
                 self.evaluate(&Expr::Variable(name))
             }
         }

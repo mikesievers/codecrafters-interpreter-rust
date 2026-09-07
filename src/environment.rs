@@ -22,6 +22,10 @@ impl Environment {
         }
     }
 
+    pub fn take_enclosing(&mut self) -> Option<Box<Environment>> {
+        self.enclosing.take()
+    }
+
     pub fn put<T: Into<String>>(&mut self, name: T, value: Option<LoxValue>) {
         self.values.insert(name.into(), value);
     }
