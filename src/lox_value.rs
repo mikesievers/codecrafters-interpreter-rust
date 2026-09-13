@@ -1,4 +1,7 @@
-use std::{fmt::Display, ops::{Add, Div, Mul, Neg, Not, Sub}};
+use std::{
+    fmt::Display,
+    ops::{Add, Div, Mul, Neg, Not, Sub},
+};
 
 use crate::lox_error::LoxError;
 
@@ -18,7 +21,7 @@ pub enum LoxValue {
 impl Display for LoxValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let output = match self {
-            LoxValue::String(s) => { s.clone()},
+            LoxValue::String(s) => s.clone(),
             LoxValue::Number(n) => format!("{n}"),
             LoxValue::Boolean(b) => b.to_string(),
             LoxValue::Nil => "nil".to_string(),
@@ -33,7 +36,9 @@ impl Neg for LoxValue {
     fn neg(self) -> Self::Output {
         match self {
             LoxValue::Number(n) => Ok(LoxValue::Number(-n)),
-            _ => Err(LoxError::RuntimeError("Operand must be a number.".to_string())),
+            _ => Err(LoxError::RuntimeError(
+                "Operand must be a number.".to_string(),
+            )),
         }
     }
 }
@@ -42,10 +47,10 @@ impl Not for LoxValue {
     type Output = LoxValue;
 
     fn not(self) -> Self::Output {
-        match self {
-            LoxValue::String(_) | LoxValue::Number(_) => LoxValue::Boolean(false),
-            LoxValue::Boolean(b) => LoxValue::Boolean(!b),
-            LoxValue::Nil => LoxValue::Boolean(true),
+        if self.is_truthy() {
+            LoxValue::Boolean(false)
+        } else {
+            LoxValue::Boolean(true)
         }
     }
 }
@@ -55,8 +60,10 @@ impl Sub for LoxValue {
 
     fn sub(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
-            (LoxValue::Number(l), LoxValue::Number(r)) => Ok(LoxValue::Number(l-r)),
-            _ => Err(LoxError::RuntimeError("Operands must be numbers.".to_string())),
+            (LoxValue::Number(l), LoxValue::Number(r)) => Ok(LoxValue::Number(l - r)),
+            _ => Err(LoxError::RuntimeError(
+                "Operands must be numbers.".to_string(),
+            )),
         }
     }
 }
@@ -65,20 +72,24 @@ impl Mul for LoxValue {
     type Output = Result<LoxValue, LoxError>;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        match(self, rhs) {
-            (LoxValue::Number(l), LoxValue::Number(r)) => Ok(LoxValue::Number(l*r)),
-            _ => Err(LoxError::RuntimeError("Operands must be numbers.".to_string())),
+        match (self, rhs) {
+            (LoxValue::Number(l), LoxValue::Number(r)) => Ok(LoxValue::Number(l * r)),
+            _ => Err(LoxError::RuntimeError(
+                "Operands must be numbers.".to_string(),
+            )),
         }
     }
 }
 
 impl Div for LoxValue {
     type Output = Result<LoxValue, LoxError>;
-    
+
     fn div(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
-            (LoxValue::Number(l), LoxValue::Number(r)) => Ok(LoxValue::Number(l/r)),
-            _ => Err(LoxError::RuntimeError("Operands must be numbers.".to_string())),
+            (LoxValue::Number(l), LoxValue::Number(r)) => Ok(LoxValue::Number(l / r)),
+            _ => Err(LoxError::RuntimeError(
+                "Operands must be numbers.".to_string(),
+            )),
         }
     }
 }
@@ -88,9 +99,11 @@ impl Add for LoxValue {
 
     fn add(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
-            (LoxValue::String(l), LoxValue::String(r)) => Ok(LoxValue::String(l+&r)),
-            (LoxValue::Number(l), LoxValue::Number(r)) => Ok(LoxValue::Number(l+r)),
-            _ => Err(LoxError::RuntimeError("Operands must be numbers.".to_string())),
+            (LoxValue::String(l), LoxValue::String(r)) => Ok(LoxValue::String(l + &r)),
+            (LoxValue::Number(l), LoxValue::Number(r)) => Ok(LoxValue::Number(l + r)),
+            _ => Err(LoxError::RuntimeError(
+                "Operands must be numbers.".to_string(),
+            )),
         }
     }
 }
@@ -115,12 +128,22 @@ impl PartialOrd for LoxValue {
     }
 }
 
+impl LoxValue {
+    pub fn is_truthy(&self) -> bool {
+        match self {
+            LoxValue::String(_) | LoxValue::Number(_) => true,
+            LoxValue::Boolean(b) => *b,
+            LoxValue::Nil => false,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::lox_value::LoxValue;
 
     #[test]
-    fn test_neg_number () {
+    fn test_neg_number() {
         let n = LoxValue::Number(1.1);
         assert_eq!((-n).unwrap(), LoxValue::Number(-1.1));
     }
@@ -129,5 +152,8 @@ mod tests {
     fn test_not_truth() {
         let b = LoxValue::Boolean(true);
         assert_eq!(!b, LoxValue::Boolean(false));
+
+        let c = LoxValue::String("test".into());
+        assert_eq!(!c, LoxValue::Boolean(false));
     }
 }

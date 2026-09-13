@@ -87,6 +87,18 @@ impl Interpreter {
                 self.env = Some(*enclosing);
                 Ok(())
             }
+            Stmt::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
+                if self.evaluate(condition)?.is_truthy() {
+                    self.execute(then_branch)?;
+                } else if let Some(else_branch) = else_branch {
+                    self.execute(else_branch)?;
+                }
+                Ok(())
+            }
         }
     }
 

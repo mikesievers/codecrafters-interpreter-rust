@@ -5,6 +5,11 @@ use crate::expr::Expr;
 pub enum Stmt<'a> {
     Block(Vec<Stmt<'a>>),
     Expression(Expr<'a>),
+    If {
+        condition: Expr<'a>,
+        then_branch: Box<Stmt<'a>>,
+        else_branch: Option<Box<Stmt<'a>>>,
+    },
     Print(Expr<'a>),
     Var {
         name: &'a str,
@@ -22,8 +27,23 @@ impl Display for Stmt<'_> {
                 None => write!(f, "var {name}"),
             },
             Stmt::Block(stmts) => {
-                let inner_block: String = stmts.iter().map(|s| s.to_string()).collect();
+                let inner_block: String =
+                    stmts.iter().map(std::string::ToString::to_string).collect();
                 write!(f, "{{\n{inner_block}\n}}")
+            }
+            Stmt::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
+                let else_string: String;
+                if let Some(else_stmt) = else_branch {
+                    else_string = format!("\nelse\n   {else_stmt}");
+                } else {
+                    else_string = String::new();
+                }
+
+                write!(f, "if ({condition}) \n   {then_branch}{else_string}")
             }
         }
     }

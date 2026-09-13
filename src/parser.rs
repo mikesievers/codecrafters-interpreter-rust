@@ -132,9 +132,13 @@ fn parse_var_declaration<'a>(parser: &mut Parser<'a>) -> Result<Stmt<'a>, LoxErr
 }
 
 // statement      → exprStmt
+//                | ifStmt
 //                | printStmt
 //                | block ;
 fn parse_statement<'a>(parser: &mut Parser<'a>) -> Result<Stmt<'a>, LoxError> {
+    if parser.matches(&[TokenType::If]) {
+        return parse_if_statement(parser);
+    }
     if parser.matches(&[TokenType::Print]) {
         return parse_print_statement(parser);
     }
@@ -142,6 +146,34 @@ fn parse_statement<'a>(parser: &mut Parser<'a>) -> Result<Stmt<'a>, LoxError> {
         return parse_block(parser);
     }
     Ok(parse_expression_statement(parser))?
+}
+
+// ifStmt         → "if" "(" expression ")" statement
+//                ( "else" statement )? ;
+fn parse_if_statement<'a>(parser: &mut Parser<'a>) -> Result<Stmt<'a>, LoxError> {
+    if parser.consume(&TokenType::LeftParen).is_err() {
+        return Err(LoxError::SyntaxError("Expect '(' after 'if'.".into()));
+    }
+
+    let condition = parse_expression(parser)?;
+
+    if parser.consume(&TokenType::RightParen).is_err() {
+        return Err(LoxError::SyntaxError("Expect ')' after condition.".into()));
+    }
+
+    let then_branch = Box::new(parse_statement(parser)?);
+
+    let else_branch = if parser.matches(&[TokenType::Else]) {
+        Some(Box::new(parse_statement(parser)?))
+    } else {
+        None
+    };
+
+    Ok(Stmt::If {
+        condition,
+        then_branch,
+        else_branch,
+    })
 }
 
 // block          → "{" declaration* "}" ;
