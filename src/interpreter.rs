@@ -169,6 +169,21 @@ impl Interpreter {
                     .assign(*name, Some(evaluated_value))?;
                 self.evaluate(&Expr::Variable(name))
             }
+            Expr::Logical {
+                left,
+                operator,
+                right,
+            } => {
+                let left_result = self.evaluate(left)?;
+                if operator.token_type == TokenType::Or {
+                    if left_result.is_truthy() {
+                        return Ok(left_result);
+                    }
+                } else if !left_result.is_truthy() {
+                    return Ok(left_result);
+                }
+                self.evaluate(right)
+            }
         }
     }
 }

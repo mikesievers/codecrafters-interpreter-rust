@@ -205,7 +205,6 @@ fn parse_print_statement<'a>(parser: &mut Parser<'a>) -> Result<Stmt<'a>, LoxErr
     }
 }
 
-// NEW:
 // expression     → assignment ;
 fn parse_expression<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, LoxError> {
     match parse_assignment(parser) {
@@ -218,9 +217,9 @@ fn parse_expression<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, LoxError> {
 }
 
 // assignment     → IDENTIFIER "=" assignment
-//                | equality ;
+//                | logic_or ;
 fn parse_assignment<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, LoxError> {
-    let expr = parse_equality(parser)?;
+    let expr = parse_or(parser)?;
 
     if parser.matches(&[TokenType::Equal]) {
         let equals = parser.previous();
@@ -241,6 +240,40 @@ fn parse_assignment<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, LoxError> {
                 )));
             }
         }
+    }
+
+    Ok(expr)
+}
+
+// logic_or       → logic_and ( "or" logic_and )* ;
+fn parse_or<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, LoxError> {
+    let mut expr = parse_and(parser)?;
+
+    while parser.matches(&[TokenType::Or]) {
+        let operator = parser.previous().clone();
+        let right = parse_and(parser)?;
+        expr = Expr::Logical {
+            left: Box::new(expr),
+            operator,
+            right: Box::new(right),
+        };
+    }
+
+    Ok(expr)
+}
+
+// logic_and      → equality ( "and" equality )* ;
+fn parse_and<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, LoxError> {
+    let mut expr = parse_equality(parser)?;
+
+    while parser.matches(&[TokenType::And]) {
+        let operator = parser.previous().clone();
+        let right = parse_equality(parser)?;
+        expr = Expr::Logical {
+            left: Box::new(expr),
+            operator,
+            right: Box::new(right),
+        };
     }
 
     Ok(expr)

@@ -6,6 +6,11 @@ use crate::token::{Token, TokenValue};
 pub enum Expr<'a> {
     Literal(TokenValue<'a>),
     Grouping(Box<Expr<'a>>),
+    Logical {
+        left: Box<Expr<'a>>,
+        operator: Token<'a>,
+        right: Box<Expr<'a>>,
+    },
     Unary {
         operator: Token<'a>,
         right: Box<Expr<'a>>,
@@ -35,6 +40,11 @@ impl Display for Expr<'_> {
             } => format!("({} {left} {right})", operator.lexeme),
             Expr::Variable(name) => name.to_string(),
             Expr::Assign { name, value } => format!("({name}={value}"),
+            Expr::Logical {
+                left,
+                operator,
+                right,
+            } => format!("{left} {operator} {right}"),
         };
         write!(f, "{output}")
     }
