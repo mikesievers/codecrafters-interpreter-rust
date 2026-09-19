@@ -132,6 +132,7 @@ fn parse_var_declaration<'a>(parser: &mut Parser<'a>) -> Result<Stmt<'a>, LoxErr
 }
 
 // statement      → exprStmt
+//                | forStmt
 //                | ifStmt
 //                | printStmt
 //                | whileStmt
@@ -139,6 +140,9 @@ fn parse_var_declaration<'a>(parser: &mut Parser<'a>) -> Result<Stmt<'a>, LoxErr
 fn parse_statement<'a>(parser: &mut Parser<'a>) -> Result<Stmt<'a>, LoxError> {
     if parser.matches(&[TokenType::If]) {
         return parse_if_statement(parser);
+    }
+    if parser.matches(&[TokenType::For]) {
+        return parse_for_statement(parser);
     }
     if parser.matches(&[TokenType::Print]) {
         return parse_print_statement(parser);
@@ -178,6 +182,71 @@ fn parse_if_statement<'a>(parser: &mut Parser<'a>) -> Result<Stmt<'a>, LoxError>
         then_branch,
         else_branch,
     })
+}
+
+// forStmt        → "for" "(" ( varDecl | exprStmt | ";" )
+//                  expression? ";"
+//                  expression? ")" statement ;
+fn parse_for_statement<'a>(parser: &mut Parser<'a>) -> Result<Stmt<'a>, LoxError> {
+    if parser.consume(&TokenType::LeftParen).is_err() {
+        return Err(LoxError::SyntaxError("Expect '(' after 'for'.".into()));
+    }
+
+    // Parse initializer
+    let initializer = if parser.matches(&[TokenType::Semicolon]) {
+        None
+    } else if parser.matches(&[TokenType::Var]) {
+        Some(parse_var_declaration(parser)?)
+    } else {
+        Some(parse_expression_statement(parser)?)
+    };
+
+    // Parse condition
+    let condition = if parser.matches(&[TokenType::Semicolon]) {
+        Expr::Literal(TokenValue::Boolean(true))
+    } else {
+        parse_expression(parser)?
+    };
+    if parser.consume(&TokenType::Semicolon).is_err() {
+        return Err(LoxError::SyntaxError(
+            "Expect ';' after loop condition.".into(),
+        ));
+    }
+
+    // Parse increment
+    let increment = if parser.check(&TokenType::RightParen) {
+        None
+    } else {
+        Some(parse_expression(parser)?)
+    };
+    if parser.consume(&TokenType::RightParen).is_err() {
+        return Err(LoxError::SyntaxError(
+            "Expect ')' after for clauses.".into(),
+        ));
+    }
+
+    // TODO: Parse body
+    let for_body = parse_statement(parser)?;
+
+    // Desugar into while loop
+    let mut body_stmts = vec![for_body];
+    if let Some(increment) = increment {
+        body_stmts.push(Stmt::Expression(increment));
+    }
+    let mut body = Stmt::Block(body_stmts);
+
+    // Add the condition
+    body = Stmt::While {
+        condition,
+        body: Box::new(body),
+    };
+
+    // Add the initializer, if any
+    if let Some(initializer) = initializer {
+        body = Stmt::Block(vec![initializer, body]);
+    }
+
+    Ok(body)
 }
 
 fn parse_while_statement<'a>(parser: &mut Parser<'a>) -> Result<Stmt<'a>, LoxError> {
