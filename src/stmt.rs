@@ -15,6 +15,10 @@ pub enum Stmt<'a> {
         name: &'a str,
         initializer: Option<Expr<'a>>,
     },
+    While {
+        condition: Expr<'a>,
+        body: Box<Stmt<'a>>,
+    },
 }
 
 impl Display for Stmt<'_> {
@@ -45,6 +49,7 @@ impl Display for Stmt<'_> {
 
                 write!(f, "if ({condition}) \n   {then_branch}{else_string}")
             }
+            Stmt::While { condition, body } => write!(f, "while ({condition}) {body}"),
         }
     }
 }

@@ -134,6 +134,7 @@ fn parse_var_declaration<'a>(parser: &mut Parser<'a>) -> Result<Stmt<'a>, LoxErr
 // statement      → exprStmt
 //                | ifStmt
 //                | printStmt
+//                | whileStmt
 //                | block ;
 fn parse_statement<'a>(parser: &mut Parser<'a>) -> Result<Stmt<'a>, LoxError> {
     if parser.matches(&[TokenType::If]) {
@@ -141,6 +142,9 @@ fn parse_statement<'a>(parser: &mut Parser<'a>) -> Result<Stmt<'a>, LoxError> {
     }
     if parser.matches(&[TokenType::Print]) {
         return parse_print_statement(parser);
+    }
+    if parser.matches(&[TokenType::While]) {
+        return parse_while_statement(parser);
     }
     if parser.matches(&[TokenType::LeftBrace]) {
         return parse_block(parser);
@@ -173,6 +177,22 @@ fn parse_if_statement<'a>(parser: &mut Parser<'a>) -> Result<Stmt<'a>, LoxError>
         condition,
         then_branch,
         else_branch,
+    })
+}
+
+fn parse_while_statement<'a>(parser: &mut Parser<'a>) -> Result<Stmt<'a>, LoxError> {
+    if parser.consume(&TokenType::LeftParen).is_err() {
+        return Err(LoxError::SyntaxError("Expect '(' after 'while'.".into()));
+    }
+    let condition = parse_expression(parser)?;
+    if parser.consume(&TokenType::RightParen).is_err() {
+        return Err(LoxError::SyntaxError("Expect ')' after condition.".into()));
+    }
+    let body = parse_statement(parser)?;
+
+    Ok(Stmt::While {
+        condition,
+        body: Box::new(body),
     })
 }
 
