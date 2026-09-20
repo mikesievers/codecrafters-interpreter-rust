@@ -441,8 +441,7 @@ fn parse_factor<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, LoxError> {
     Ok(expr)
 }
 
-// unary          → ( "!" | "-" ) unary
-//                | primary ;
+// unary          → ( "!" | "-" ) unary | call;
 fn parse_unary<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, LoxError> {
     if parser.matches(&[TokenType::Bang, TokenType::Minus]) {
         let operator = parser.previous().clone();
@@ -453,7 +452,49 @@ fn parse_unary<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, LoxError> {
         });
     }
 
-    parse_primary(parser)
+    parse_call(parser)
+}
+
+// call           → primary ( "(" arguments? ")" )* ;
+fn parse_call<'a>(parser: &mut Parser<'a>) -> Result<Expr<'a>, LoxError> {
+    let mut expr = parse_primary(parser)?;
+
+    loop {
+        if parser.matches(&[TokenType::LeftParen]) {
+            expr = finish_call(parser, expr)?;
+        } else {
+            break;
+        }
+    }
+    Ok(expr)
+}
+
+// Helper to finish the call parsing
+fn finish_call<'a>(parser: &mut Parser<'a>, callee: Expr<'a>) -> Result<Expr<'a>, LoxError> {
+    let mut arguments = vec![];
+    if !parser.check(&TokenType::RightParen) {
+        loop {
+            if arguments.len() >= 255 {
+                eprintln!("Can't have more than 255 arguments.");
+            }
+            arguments.push(parse_expression(parser)?);
+            if !parser.matches(&[TokenType::Comma]) {
+                break;
+            }
+        }
+    }
+
+    let Ok(paren) = parser.consume(&TokenType::RightParen) else {
+        return Err(LoxError::SyntaxError(
+            "Expecting ')' after function arguments".to_string(),
+        ));
+    };
+
+    Ok(Expr::Call {
+        callee: Box::new(callee),
+        paren: paren.clone(),
+        arguments,
+    })
 }
 
 // primary        → NUMBER | STRING | "true" | "false" | "nil"

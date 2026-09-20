@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+use itertools::Itertools;
+
 use crate::token::{Token, TokenValue};
 
 #[derive(Debug, PartialEq)]
@@ -25,6 +27,11 @@ pub enum Expr<'a> {
         name: &'a str,
         value: Box<Expr<'a>>,
     },
+    Call {
+        callee: Box<Expr<'a>>,
+        paren: Token<'a>,
+        arguments: Vec<Expr<'a>>,
+    },
 }
 
 impl Display for Expr<'_> {
@@ -45,6 +52,18 @@ impl Display for Expr<'_> {
                 operator,
                 right,
             } => format!("{left} {operator} {right}"),
+            Expr::Call {
+                callee,
+                paren,
+                arguments,
+            } => format!(
+                "{callee}({})",
+                arguments
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect_vec()
+                    .join(",")
+            ),
         };
         write!(f, "{output}")
     }

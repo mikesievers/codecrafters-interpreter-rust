@@ -190,6 +190,24 @@ impl Interpreter {
                 }
                 self.evaluate(right)
             }
+            Expr::Call {
+                callee,
+                paren,
+                arguments,
+            } => {
+                let callee = self.evaluate(callee)?;
+                let arguments = arguments
+                    .iter()
+                    .map(|arg| self.evaluate(arg))
+                    .collect::<Result<Vec<_>, _>>()?;
+
+                // TODO:
+                // - Add a Function value
+                // - Make the LoxFunction an enum (user defined, native)
+                // - Have the impl match on the type, have arity static for built in and dynamic for user defined
+                // because the callee is evaluated above, the straightforward location for functions is within the Value.
+                todo!()
+            }
         }
     }
 }
