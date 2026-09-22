@@ -2,6 +2,7 @@ use crate::{
     environment::Environment,
     expr::Expr,
     lox_error::LoxError,
+    lox_function::{CLOCK, LoxFunction},
     lox_value::LoxValue,
     stmt::Stmt,
     token::{TokenType, TokenValue},
@@ -13,9 +14,11 @@ pub struct Interpreter {
 
 impl Interpreter {
     pub fn new() -> Self {
-        Interpreter {
-            env: Some(Environment::new()),
-        }
+        // Create global environment with builtin functions
+        let mut env = Environment::new();
+        env.put("clock", Some(LoxValue::Function(CLOCK)));
+
+        Interpreter { env: Some(env) }
     }
 
     pub fn interpret(&mut self, program: &[Stmt]) -> Result<(), LoxError> {
@@ -195,18 +198,25 @@ impl Interpreter {
                 paren,
                 arguments,
             } => {
-                let callee = self.evaluate(callee)?;
+                let callee = match self.evaluate(callee)? {
+                    LoxValue::Function(builtin_function) => builtin_function,
+                    _ => {
+                        return Err(LoxError::RuntimeError(
+                            "Callee is not a function".to_string(),
+                        ));
+                    }
+                };
                 let arguments = arguments
                     .iter()
                     .map(|arg| self.evaluate(arg))
                     .collect::<Result<Vec<_>, _>>()?;
 
-                // TODO:
-                // - Add a Function value
-                // - Make the LoxFunction an enum (user defined, native)
-                // - Have the impl match on the type, have arity static for built in and dynamic for user defined
-                // because the callee is evaluated above, the straightforward location for functions is within the Value.
-                todo!()
+                if arguments.len() != callee.arity() {
+                    return Err(LoxError::RuntimeError(
+                        "Wrong number of arguments for function".to_string(),
+                    ));
+                }
+                callee.call(self, arguments)
             }
         }
     }
