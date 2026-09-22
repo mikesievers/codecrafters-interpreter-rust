@@ -23,10 +23,10 @@ impl LoxFunction for BuiltinFunction {
     }
     fn call(
         &self,
-        interpeter: &mut Interpreter,
+        interpreter: &mut Interpreter,
         arguments: Vec<LoxValue>,
     ) -> Result<LoxValue, LoxError> {
-        (self.call)(interpeter, arguments)
+        (self.call)(interpreter, arguments)
     }
 }
 
