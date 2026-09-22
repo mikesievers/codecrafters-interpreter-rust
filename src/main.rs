@@ -3,6 +3,7 @@ mod environment;
 mod expr;
 mod interpreter;
 mod lox_error;
+mod lox_function;
 mod lox_value;
 mod parser;
 mod scanner;

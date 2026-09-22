@@ -3,7 +3,7 @@ use std::{
     ops::{Add, Div, Mul, Neg, Not, Sub},
 };
 
-use crate::lox_error::LoxError;
+use crate::{lox_error::LoxError, lox_function::LoxFunction};
 
 // The LoxValue is almost identical to the TokenValue
 // The exception is the String - while the TokenValue
@@ -16,6 +16,7 @@ pub enum LoxValue {
     Number(f64),
     Boolean(bool),
     Nil,
+    Function(LoxFunction),
 }
 
 impl Display for LoxValue {
@@ -25,6 +26,7 @@ impl Display for LoxValue {
             LoxValue::Number(n) => format!("{n}"),
             LoxValue::Boolean(b) => b.to_string(),
             LoxValue::Nil => "nil".to_string(),
+            LoxValue::Function(_lox_function) => todo!("Make function print as <fn funcname>"),
         };
         write!(f, "{output}")
     }
@@ -131,9 +133,9 @@ impl PartialOrd for LoxValue {
 impl LoxValue {
     pub fn is_truthy(&self) -> bool {
         match self {
-            LoxValue::String(_) | LoxValue::Number(_) => true,
             LoxValue::Boolean(b) => *b,
             LoxValue::Nil => false,
+            _ => true,
         }
     }
 }
