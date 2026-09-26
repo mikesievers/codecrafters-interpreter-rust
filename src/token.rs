@@ -1,22 +1,22 @@
 use std::fmt::Display;
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Token<'a> {
+pub struct Token {
     #[allow(clippy::struct_field_names)]
     pub token_type: TokenType,
-    pub lexeme: &'a str,
-    pub literal: Option<TokenValue<'a>>,
+    pub lexeme: String,
+    pub literal: Option<TokenValue>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum TokenValue<'a> {
-    String(&'a str),
+pub enum TokenValue {
+    String(String),
     Number(f64),
     Boolean(bool),
     Nil,
 }
 
-impl Display for TokenValue<'_> {
+impl Display for TokenValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let output = match self {
             TokenValue::String(s) => s.to_string(),
@@ -28,7 +28,7 @@ impl Display for TokenValue<'_> {
     }
 }
 
-impl Token<'_> {
+impl Token {
     pub fn display(&self) -> String {
         let literal = match &self.literal {
             Some(t) => t.to_string(),
@@ -45,20 +45,20 @@ impl Token<'_> {
     pub fn eof() -> Self {
         Token {
             token_type: TokenType::Eof,
-            lexeme: "",
+            lexeme: String::new(),
             literal: None,
         }
     }
     pub fn semicolon() -> Self {
         Token {
             token_type: TokenType::Semicolon,
-            lexeme: ";",
+            lexeme: ";".to_string(),
             literal: None,
         }
     }
 }
 
-impl Display for Token<'_> {
+impl Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.display())
     }
@@ -191,7 +191,7 @@ mod tests {
     fn test_display() {
         let token = Token {
             token_type: TokenType::LeftParen,
-            lexeme: "(",
+            lexeme: "(".to_string(),
             literal: None,
         };
 

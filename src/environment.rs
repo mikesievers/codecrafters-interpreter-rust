@@ -3,12 +3,12 @@ use std::collections::{HashMap, hash_map::Entry};
 use crate::{lox_error::LoxError, lox_value::LoxValue};
 
 #[derive(Clone)]
-pub struct Environment<'a> {
-    enclosing: Option<Box<Environment<'a>>>,
-    values: HashMap<String, Option<LoxValue<'a>>>,
+pub struct Environment {
+    enclosing: Option<Box<Environment>>,
+    values: HashMap<String, Option<LoxValue>>,
 }
 
-impl<'a> Environment<'a> {
+impl Environment {
     pub fn new() -> Self {
         Environment {
             enclosing: None,
@@ -16,7 +16,7 @@ impl<'a> Environment<'a> {
         }
     }
 
-    pub fn new_enclosed(enclosing: Environment<'a>) -> Self {
+    pub fn new_enclosed(enclosing: Environment) -> Self {
         Environment {
             enclosing: Some(Box::new(enclosing)),
             values: HashMap::new(),
@@ -27,14 +27,14 @@ impl<'a> Environment<'a> {
         self.enclosing.take()
     }
 
-    pub fn put<T: Into<String>>(&mut self, name: T, value: Option<LoxValue<'a>>) {
+    pub fn put<T: Into<String>>(&mut self, name: T, value: Option<LoxValue>) {
         self.values.insert(name.into(), value);
     }
 
     pub fn assign<T: Into<String>>(
         &mut self,
         name: T,
-        value: Option<LoxValue<'a>>,
+        value: Option<LoxValue>,
     ) -> Result<(), LoxError> {
         let name_str: String = name.into();
 

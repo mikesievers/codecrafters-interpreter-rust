@@ -5,31 +5,31 @@ use itertools::Itertools;
 use crate::{expr::Expr, token::Token};
 
 #[derive(Clone, Debug)]
-pub enum Stmt<'a> {
-    Block(Vec<Stmt<'a>>),
-    Expression(Expr<'a>),
+pub enum Stmt {
+    Block(Vec<Stmt>),
+    Expression(Expr),
     Function {
-        name: Token<'a>,
-        params: Vec<Token<'a>>,
-        body: Box<Stmt<'a>>,
+        name: Token,
+        params: Vec<Token>,
+        body: Box<Stmt>,
     },
     If {
-        condition: Expr<'a>,
-        then_branch: Box<Stmt<'a>>,
-        else_branch: Option<Box<Stmt<'a>>>,
+        condition: Expr,
+        then_branch: Box<Stmt>,
+        else_branch: Option<Box<Stmt>>,
     },
-    Print(Expr<'a>),
+    Print(Expr),
     Var {
-        name: &'a str,
-        initializer: Option<Expr<'a>>,
+        name: String,
+        initializer: Option<Expr>,
     },
     While {
-        condition: Expr<'a>,
-        body: Box<Stmt<'a>>,
+        condition: Expr,
+        body: Box<Stmt>,
     },
 }
 
-impl Display for Stmt<'_> {
+impl Display for Stmt {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Stmt::Expression(expr) => write!(f, "{expr}"),

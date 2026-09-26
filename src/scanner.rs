@@ -31,9 +31,9 @@ impl Scanner {
     // Returns the tokens together with a flag indicating whether any
     // lexical errors were encountered.
     #[must_use]
-    pub fn tokenize(&self) -> (Vec<Token<'_>>, bool) {
+    pub fn tokenize(&self) -> (Vec<Token>, bool) {
         let mut line_no: u32 = 1;
-        let mut tokens: Vec<Token<'_>> = vec![];
+        let mut tokens: Vec<Token> = vec![];
         let mut had_errors = false;
 
         let mut char_indices = peek_nth(self.data.char_indices());
@@ -117,10 +117,10 @@ fn is_alpha_numeric(c: char) -> bool {
     is_alpha(c) || c.is_ascii_digit()
 }
 
-fn handle_identifier<'a>(
-    data: &'a str,
-    tokens: &mut Vec<Token<'a>>,
-    char_indices: &mut itertools::PeekNth<std::str::CharIndices<'a>>,
+fn handle_identifier(
+    data: &str,
+    tokens: &mut Vec<Token>,
+    char_indices: &mut itertools::PeekNth<std::str::CharIndices>,
     byte_idx: usize,
     c: char,
 ) {
@@ -139,8 +139,8 @@ fn handle_identifier<'a>(
         }
     }
 
-    let lexeme = &data[byte_idx..byte_idx + byte_len];
-    let token_type = match TokenType::from_str(lexeme) {
+    let lexeme = data[byte_idx..byte_idx + byte_len].to_string();
+    let token_type = match TokenType::from_str(&lexeme) {
         Some(token_type) => token_type,
         None => TokenType::Identifier,
     };
@@ -152,10 +152,10 @@ fn handle_identifier<'a>(
     });
 }
 
-fn handle_number<'a>(
-    data: &'a str,
-    tokens: &mut Vec<Token<'a>>,
-    char_indices: &mut itertools::PeekNth<std::str::CharIndices<'a>>,
+fn handle_number(
+    data: &str,
+    tokens: &mut Vec<Token>,
+    char_indices: &mut itertools::PeekNth<std::str::CharIndices>,
     byte_idx: usize,
 ) {
     // Number: digits or digits DOT digits
@@ -188,21 +188,21 @@ fn handle_number<'a>(
         }
     }
 
-    let number_chars = &data[byte_idx..byte_idx + byte_len];
+    let number_chars = data[byte_idx..byte_idx + byte_len].to_string();
 
     tokens.push(Token {
         token_type: TokenType::Number,
-        lexeme: number_chars,
+        lexeme: number_chars.clone(),
         // SAFETY: The above already checks whether the number consists only of digits or digits DOT
         // digits, therefor unwrap is safe
         literal: Some(TokenValue::Number(number_chars.parse::<f64>().unwrap())),
     });
 }
 
-fn handle_string<'a>(
-    data: &'a str,
-    tokens: &mut Vec<Token<'a>>,
-    char_indices: &mut itertools::PeekNth<std::str::CharIndices<'a>>,
+fn handle_string(
+    data: &str,
+    tokens: &mut Vec<Token>,
+    char_indices: &mut itertools::PeekNth<std::str::CharIndices>,
     byte_idx: usize,
 ) -> Option<u32> {
     // String: consume everything until the next double quote
@@ -227,18 +227,18 @@ fn handle_string<'a>(
 
     tokens.push(Token {
         token_type: TokenType::String,
-        lexeme: &data[byte_idx..byte_idx + byte_len],
+        lexeme: data[byte_idx..byte_idx + byte_len].to_string(),
         literal: Some(TokenValue::String(
-            &data[byte_idx + quote_len..byte_idx + byte_len - quote_len],
+            data[byte_idx + quote_len..byte_idx + byte_len - quote_len].to_string(),
         )),
     });
     Some(new_lines)
 }
 
-fn handle_slash<'a>(
-    data: &'a str,
-    tokens: &mut Vec<Token<'a>>,
-    char_indices: &mut itertools::PeekNth<std::str::CharIndices<'a>>,
+fn handle_slash(
+    data: &str,
+    tokens: &mut Vec<Token>,
+    char_indices: &mut itertools::PeekNth<std::str::CharIndices>,
     byte_idx: usize,
 ) {
     // If the following char is also a slash, it's a comment.
@@ -260,16 +260,16 @@ fn handle_slash<'a>(
     } else {
         tokens.push(Token {
             token_type: TokenType::Slash,
-            lexeme: &data[byte_idx..byte_idx + '/'.len_utf8()],
+            lexeme: data[byte_idx..byte_idx + '/'.len_utf8()].to_string(),
             literal: None,
         });
     }
 }
 
-fn handle_greater<'a>(
-    data: &'a str,
-    tokens: &mut Vec<Token<'a>>,
-    char_indices: &mut itertools::PeekNth<std::str::CharIndices<'a>>,
+fn handle_greater(
+    data: &str,
+    tokens: &mut Vec<Token>,
+    char_indices: &mut itertools::PeekNth<std::str::CharIndices>,
     byte_idx: usize,
 ) {
     if let Some((byte_idx_next, c_next)) = char_indices.peek().copied()
@@ -279,22 +279,22 @@ fn handle_greater<'a>(
         char_indices.next();
         tokens.push(Token {
             token_type: TokenType::GreaterEqual,
-            lexeme: &data[byte_idx..byte_idx_next + '='.len_utf8()],
+            lexeme: data[byte_idx..byte_idx_next + '='.len_utf8()].to_string(),
             literal: None,
         });
     } else {
         tokens.push(Token {
             token_type: TokenType::Greater,
-            lexeme: &data[byte_idx..byte_idx + '>'.len_utf8()],
+            lexeme: data[byte_idx..byte_idx + '>'.len_utf8()].to_string(),
             literal: None,
         });
     }
 }
 
-fn handle_less<'a>(
-    data: &'a str,
-    tokens: &mut Vec<Token<'a>>,
-    char_indices: &mut itertools::PeekNth<std::str::CharIndices<'a>>,
+fn handle_less(
+    data: &str,
+    tokens: &mut Vec<Token>,
+    char_indices: &mut itertools::PeekNth<std::str::CharIndices>,
     byte_idx: usize,
 ) {
     if let Some((byte_idx_next, c_next)) = char_indices.peek().copied()
@@ -304,22 +304,22 @@ fn handle_less<'a>(
         char_indices.next();
         tokens.push(Token {
             token_type: TokenType::LessEqual,
-            lexeme: &data[byte_idx..byte_idx_next + '='.len_utf8()],
+            lexeme: data[byte_idx..byte_idx_next + '='.len_utf8()].to_string(),
             literal: None,
         });
     } else {
         tokens.push(Token {
             token_type: TokenType::Less,
-            lexeme: &data[byte_idx..byte_idx + '<'.len_utf8()],
+            lexeme: data[byte_idx..byte_idx + '<'.len_utf8()].to_string(),
             literal: None,
         });
     }
 }
 
-fn handle_bang<'a>(
-    data: &'a str,
-    tokens: &mut Vec<Token<'a>>,
-    char_indices: &mut itertools::PeekNth<std::str::CharIndices<'a>>,
+fn handle_bang(
+    data: &str,
+    tokens: &mut Vec<Token>,
+    char_indices: &mut itertools::PeekNth<std::str::CharIndices>,
     byte_idx: usize,
 ) {
     if let Some((byte_idx_next, c_next)) = char_indices.peek().copied()
@@ -329,22 +329,22 @@ fn handle_bang<'a>(
         char_indices.next();
         tokens.push(Token {
             token_type: TokenType::BangEqual,
-            lexeme: &data[byte_idx..byte_idx_next + '='.len_utf8()],
+            lexeme: data[byte_idx..byte_idx_next + '='.len_utf8()].to_string(),
             literal: None,
         });
     } else {
         tokens.push(Token {
             token_type: TokenType::Bang,
-            lexeme: &data[byte_idx..byte_idx + '!'.len_utf8()],
+            lexeme: data[byte_idx..byte_idx + '!'.len_utf8()].to_string(),
             literal: None,
         });
     }
 }
 
-fn handle_equal<'a>(
-    data: &'a str,
-    tokens: &mut Vec<Token<'a>>,
-    char_indices: &mut itertools::PeekNth<std::str::CharIndices<'a>>,
+fn handle_equal(
+    data: &str,
+    tokens: &mut Vec<Token>,
+    char_indices: &mut itertools::PeekNth<std::str::CharIndices>,
     byte_idx: usize,
 ) {
     if let Some((byte_idx_next, c_next)) = char_indices.peek().copied()
@@ -354,68 +354,69 @@ fn handle_equal<'a>(
         char_indices.next();
         tokens.push(Token {
             token_type: TokenType::EqualEqual,
-            lexeme: &data[byte_idx..byte_idx_next + '='.len_utf8()],
+            lexeme: data[byte_idx..byte_idx_next + '='.len_utf8()].to_string(),
             literal: None,
         });
     } else {
         tokens.push(Token {
             token_type: TokenType::Equal,
-            lexeme: &data[byte_idx..byte_idx + '='.len_utf8()],
+            lexeme: data[byte_idx..byte_idx + '='.len_utf8()].to_string(),
             literal: None,
         });
     }
 }
 
-fn token_from_single_char(c: &str) -> Option<Token<'_>> {
+fn token_from_single_char(c: &str) -> Option<Token> {
+    let lexeme = c.to_string();
     match c {
         "(" => Some(Token {
             token_type: TokenType::LeftParen,
-            lexeme: c,
+            lexeme,
             literal: None,
         }),
         ")" => Some(Token {
             token_type: TokenType::RightParen,
-            lexeme: c,
+            lexeme,
             literal: None,
         }),
         "{" => Some(Token {
             token_type: TokenType::LeftBrace,
-            lexeme: c,
+            lexeme,
             literal: None,
         }),
         "}" => Some(Token {
             token_type: TokenType::RightBrace,
-            lexeme: c,
+            lexeme,
             literal: None,
         }),
         "," => Some(Token {
             token_type: TokenType::Comma,
-            lexeme: c,
+            lexeme,
             literal: None,
         }),
         "." => Some(Token {
             token_type: TokenType::Dot,
-            lexeme: c,
+            lexeme,
             literal: None,
         }),
         "-" => Some(Token {
             token_type: TokenType::Minus,
-            lexeme: c,
+            lexeme,
             literal: None,
         }),
         "+" => Some(Token {
             token_type: TokenType::Plus,
-            lexeme: c,
+            lexeme,
             literal: None,
         }),
         "*" => Some(Token {
             token_type: TokenType::Star,
-            lexeme: c,
+            lexeme,
             literal: None,
         }),
         ";" => Some(Token {
             token_type: TokenType::Semicolon,
-            lexeme: c,
+            lexeme,
             literal: None,
         }),
         _ => None,

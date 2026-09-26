@@ -8,12 +8,12 @@ use crate::{
     token::{TokenType, TokenValue},
 };
 
-pub struct Interpreter<'a> {
-    globals: Environment<'a>,
-    env: Option<Environment<'a>>,
+pub struct Interpreter {
+    globals: Environment,
+    env: Option<Environment>,
 }
 
-impl<'a> Interpreter<'a> {
+impl Interpreter {
     pub fn new() -> Self {
         // Create global environment with builtin functions
         let mut globals = Environment::new();
@@ -62,13 +62,13 @@ impl<'a> Interpreter<'a> {
                     self.env
                         .as_mut()
                         .expect("Interpreter must have an Environment")
-                        .put(*name, Some(value));
+                        .put(name.clone(), Some(value));
                     Ok(())
                 } else {
                     self.env
                         .as_mut()
                         .expect("Interpreter must have an Environment")
-                        .put(*name, None);
+                        .put(name.clone(), None);
                     Ok(())
                 }
             }
@@ -186,8 +186,8 @@ impl<'a> Interpreter<'a> {
                 self.env
                     .as_mut()
                     .expect("Interpreter must have an env")
-                    .assign(*name, Some(evaluated_value))?;
-                self.evaluate(&Expr::Variable(name))
+                    .assign(name.clone(), Some(evaluated_value))?;
+                self.evaluate(&Expr::Variable(name.clone()))
             }
             Expr::Logical {
                 left,
@@ -272,7 +272,7 @@ mod tests {
         let sub = Expr::Binary {
             operator: Token {
                 token_type: TokenType::Minus,
-                lexeme: "-",
+                lexeme: "-".to_string(),
                 literal: None,
             },
             left,
@@ -289,7 +289,7 @@ mod tests {
         let sub = Expr::Binary {
             operator: Token {
                 token_type: TokenType::Star,
-                lexeme: "*",
+                lexeme: "*".to_string(),
                 literal: None,
             },
             left,
@@ -307,7 +307,7 @@ mod tests {
         let sub = Expr::Binary {
             operator: Token {
                 token_type: TokenType::Slash,
-                lexeme: "/",
+                lexeme: "/".to_string(),
                 literal: None,
             },
             left,
@@ -325,7 +325,7 @@ mod tests {
         let sub = Expr::Binary {
             operator: Token {
                 token_type: TokenType::Plus,
-                lexeme: "+",
+                lexeme: "+".to_string(),
                 literal: None,
             },
             left,
@@ -338,12 +338,12 @@ mod tests {
 
     #[test]
     fn test_add_string() {
-        let left = Box::new(Expr::Literal(TokenValue::String("4")));
-        let right = Box::new(Expr::Literal(TokenValue::String("2")));
+        let left = Box::new(Expr::Literal(TokenValue::String("4".into())));
+        let right = Box::new(Expr::Literal(TokenValue::String("2".into())));
         let sub = Expr::Binary {
             operator: Token {
                 token_type: TokenType::Plus,
-                lexeme: "+",
+                lexeme: "+".to_string(),
                 literal: None,
             },
             left,
@@ -364,7 +364,7 @@ mod tests {
         let sub = Expr::Binary {
             operator: Token {
                 token_type: TokenType::Greater,
-                lexeme: ">",
+                lexeme: ">".to_string(),
                 literal: None,
             },
             left,
@@ -382,7 +382,7 @@ mod tests {
         let sub = Expr::Binary {
             operator: Token {
                 token_type: TokenType::EqualEqual,
-                lexeme: "==",
+                lexeme: "==".to_string(),
                 literal: None,
             },
             left,

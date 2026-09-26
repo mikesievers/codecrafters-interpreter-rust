@@ -5,36 +5,36 @@ use itertools::Itertools;
 use crate::token::{Token, TokenValue};
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum Expr<'a> {
-    Literal(TokenValue<'a>),
-    Grouping(Box<Expr<'a>>),
+pub enum Expr {
+    Literal(TokenValue),
+    Grouping(Box<Expr>),
     Logical {
-        left: Box<Expr<'a>>,
-        operator: Token<'a>,
-        right: Box<Expr<'a>>,
+        left: Box<Expr>,
+        operator: Token,
+        right: Box<Expr>,
     },
     Unary {
-        operator: Token<'a>,
-        right: Box<Expr<'a>>,
+        operator: Token,
+        right: Box<Expr>,
     },
     Binary {
-        operator: Token<'a>,
-        left: Box<Expr<'a>>,
-        right: Box<Expr<'a>>,
+        operator: Token,
+        left: Box<Expr>,
+        right: Box<Expr>,
     },
-    Variable(&'a str),
+    Variable(String),
     Assign {
-        name: &'a str,
-        value: Box<Expr<'a>>,
+        name: String,
+        value: Box<Expr>,
     },
     Call {
-        callee: Box<Expr<'a>>,
-        paren: Token<'a>,
-        arguments: Vec<Expr<'a>>,
+        callee: Box<Expr>,
+        paren: Token,
+        arguments: Vec<Expr>,
     },
 }
 
-impl Display for Expr<'_> {
+impl Display for Expr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let output = match self {
             Expr::Literal(token_value) => token_value.to_string(),
@@ -85,7 +85,7 @@ mod tests {
     fn test_display_bang() {
         let operator = Token {
             token_type: TokenType::Bang,
-            lexeme: "!",
+            lexeme: "!".to_string(),
             literal: None,
         };
         let right = Expr::Literal(TokenValue::Boolean(true));

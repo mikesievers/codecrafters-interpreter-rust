@@ -12,12 +12,12 @@ pub trait LoxFunction {
 }
 
 #[derive(Debug, Clone)]
-pub struct BuiltinFunction<'a> {
+pub struct BuiltinFunction {
     n_args: usize,
-    call: fn(&mut Interpreter, Vec<LoxValue>) -> Result<LoxValue<'a>, LoxError>,
+    call: fn(&mut Interpreter, Vec<LoxValue>) -> Result<LoxValue, LoxError>,
 }
 
-impl<'a> LoxFunction for BuiltinFunction<'a> {
+impl LoxFunction for BuiltinFunction {
     fn arity(&self) -> usize {
         self.n_args
     }
@@ -31,11 +31,11 @@ impl<'a> LoxFunction for BuiltinFunction<'a> {
 }
 
 #[derive(Debug, Clone)]
-pub struct Function<'a> {
-    pub declaration: Stmt<'a>,
+pub struct Function {
+    pub declaration: Stmt,
 }
 
-impl<'a> LoxFunction for Function<'a> {
+impl LoxFunction for Function {
     fn arity(&self) -> usize {
         match &self.declaration {
             Stmt::Function { params, .. } => params.len(),

@@ -15,16 +15,16 @@ use crate::{
 // program text instead, a LoxValue is expcted to hold
 // e.g. a concatenation of Strings.
 #[derive(Debug, Clone)]
-pub enum LoxValue<'a> {
+pub enum LoxValue {
     String(String),
     Number(f64),
     Boolean(bool),
     Nil,
-    BuiltinFunction(BuiltinFunction<'a>),
-    Function(Function<'a>),
+    BuiltinFunction(BuiltinFunction),
+    Function(Function),
 }
 
-impl<'a> Display for LoxValue<'a> {
+impl Display for LoxValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let output = match self {
             LoxValue::String(s) => s.clone(),
@@ -43,8 +43,8 @@ impl<'a> Display for LoxValue<'a> {
     }
 }
 
-impl<'a> Neg for LoxValue<'a> {
-    type Output = Result<LoxValue<'a>, LoxError>;
+impl Neg for LoxValue {
+    type Output = Result<LoxValue, LoxError>;
 
     fn neg(self) -> Self::Output {
         match self {
@@ -56,8 +56,8 @@ impl<'a> Neg for LoxValue<'a> {
     }
 }
 
-impl<'a> Not for LoxValue<'a> {
-    type Output = LoxValue<'a>;
+impl Not for LoxValue {
+    type Output = LoxValue;
 
     fn not(self) -> Self::Output {
         if self.is_truthy() {
@@ -68,8 +68,8 @@ impl<'a> Not for LoxValue<'a> {
     }
 }
 
-impl<'a> Sub for LoxValue<'a> {
-    type Output = Result<LoxValue<'a>, LoxError>;
+impl Sub for LoxValue {
+    type Output = Result<LoxValue, LoxError>;
 
     fn sub(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
@@ -81,8 +81,8 @@ impl<'a> Sub for LoxValue<'a> {
     }
 }
 
-impl<'a> Mul for LoxValue<'a> {
-    type Output = Result<LoxValue<'a>, LoxError>;
+impl Mul for LoxValue {
+    type Output = Result<LoxValue, LoxError>;
 
     fn mul(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
@@ -94,8 +94,8 @@ impl<'a> Mul for LoxValue<'a> {
     }
 }
 
-impl<'a> Div for LoxValue<'a> {
-    type Output = Result<LoxValue<'a>, LoxError>;
+impl Div for LoxValue {
+    type Output = Result<LoxValue, LoxError>;
 
     fn div(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
@@ -107,8 +107,8 @@ impl<'a> Div for LoxValue<'a> {
     }
 }
 
-impl<'a> Add for LoxValue<'a> {
-    type Output = Result<LoxValue<'a>, LoxError>;
+impl Add for LoxValue {
+    type Output = Result<LoxValue, LoxError>;
 
     fn add(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
@@ -121,7 +121,7 @@ impl<'a> Add for LoxValue<'a> {
     }
 }
 
-impl<'a> PartialEq for LoxValue<'a> {
+impl PartialEq for LoxValue {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (Self::String(l0), Self::String(r0)) => *l0 == *r0,
@@ -132,7 +132,7 @@ impl<'a> PartialEq for LoxValue<'a> {
     }
 }
 
-impl<'a> PartialOrd for LoxValue<'a> {
+impl PartialOrd for LoxValue {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         match (self, other) {
             (LoxValue::Number(l), LoxValue::Number(r)) => l.partial_cmp(r),
@@ -141,7 +141,7 @@ impl<'a> PartialOrd for LoxValue<'a> {
     }
 }
 
-impl<'a> LoxValue<'a> {
+impl LoxValue {
     pub fn is_truthy(&self) -> bool {
         match self {
             LoxValue::Boolean(b) => *b,
