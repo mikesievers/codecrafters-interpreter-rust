@@ -3,7 +3,11 @@ use std::{
     ops::{Add, Div, Mul, Neg, Not, Sub},
 };
 
-use crate::{lox_error::LoxError, lox_function::BuiltinFunction};
+use crate::{
+    lox_error::LoxError,
+    lox_function::{BuiltinFunction, Function},
+    stmt::Stmt,
+};
 
 // The LoxValue is almost identical to the TokenValue
 // The exception is the String - while the TokenValue
@@ -11,29 +15,36 @@ use crate::{lox_error::LoxError, lox_function::BuiltinFunction};
 // program text instead, a LoxValue is expcted to hold
 // e.g. a concatenation of Strings.
 #[derive(Debug, Clone)]
-pub enum LoxValue {
+pub enum LoxValue<'a> {
     String(String),
     Number(f64),
     Boolean(bool),
     Nil,
-    Function(BuiltinFunction),
+    BuiltinFunction(BuiltinFunction<'a>),
+    Function(Function<'a>),
 }
 
-impl Display for LoxValue {
+impl<'a> Display for LoxValue<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let output = match self {
             LoxValue::String(s) => s.clone(),
             LoxValue::Number(n) => format!("{n}"),
             LoxValue::Boolean(b) => b.to_string(),
             LoxValue::Nil => "nil".to_string(),
-            LoxValue::Function(_lox_function) => todo!("Make function print as <fn funcname>"),
+            LoxValue::BuiltinFunction(_lox_function) => {
+                todo!("Make function print as <fn funcname>")
+            }
+            LoxValue::Function(function) => match &function.declaration {
+                Stmt::Function { name, .. } => format!("<fn {}>", name.lexeme),
+                _ => "<fn ?>".to_string(),
+            },
         };
         write!(f, "{output}")
     }
 }
 
-impl Neg for LoxValue {
-    type Output = Result<LoxValue, LoxError>;
+impl<'a> Neg for LoxValue<'a> {
+    type Output = Result<LoxValue<'a>, LoxError>;
 
     fn neg(self) -> Self::Output {
         match self {
@@ -45,8 +56,8 @@ impl Neg for LoxValue {
     }
 }
 
-impl Not for LoxValue {
-    type Output = LoxValue;
+impl<'a> Not for LoxValue<'a> {
+    type Output = LoxValue<'a>;
 
     fn not(self) -> Self::Output {
         if self.is_truthy() {
@@ -57,8 +68,8 @@ impl Not for LoxValue {
     }
 }
 
-impl Sub for LoxValue {
-    type Output = Result<LoxValue, LoxError>;
+impl<'a> Sub for LoxValue<'a> {
+    type Output = Result<LoxValue<'a>, LoxError>;
 
     fn sub(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
@@ -70,8 +81,8 @@ impl Sub for LoxValue {
     }
 }
 
-impl Mul for LoxValue {
-    type Output = Result<LoxValue, LoxError>;
+impl<'a> Mul for LoxValue<'a> {
+    type Output = Result<LoxValue<'a>, LoxError>;
 
     fn mul(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
@@ -83,8 +94,8 @@ impl Mul for LoxValue {
     }
 }
 
-impl Div for LoxValue {
-    type Output = Result<LoxValue, LoxError>;
+impl<'a> Div for LoxValue<'a> {
+    type Output = Result<LoxValue<'a>, LoxError>;
 
     fn div(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
@@ -96,8 +107,8 @@ impl Div for LoxValue {
     }
 }
 
-impl Add for LoxValue {
-    type Output = Result<LoxValue, LoxError>;
+impl<'a> Add for LoxValue<'a> {
+    type Output = Result<LoxValue<'a>, LoxError>;
 
     fn add(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
@@ -110,7 +121,7 @@ impl Add for LoxValue {
     }
 }
 
-impl PartialEq for LoxValue {
+impl<'a> PartialEq for LoxValue<'a> {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (Self::String(l0), Self::String(r0)) => *l0 == *r0,
@@ -121,7 +132,7 @@ impl PartialEq for LoxValue {
     }
 }
 
-impl PartialOrd for LoxValue {
+impl<'a> PartialOrd for LoxValue<'a> {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         match (self, other) {
             (LoxValue::Number(l), LoxValue::Number(r)) => l.partial_cmp(r),
@@ -130,7 +141,7 @@ impl PartialOrd for LoxValue {
     }
 }
 
-impl LoxValue {
+impl<'a> LoxValue<'a> {
     pub fn is_truthy(&self) -> bool {
         match self {
             LoxValue::Boolean(b) => *b,

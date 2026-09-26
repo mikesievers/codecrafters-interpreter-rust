@@ -5,6 +5,9 @@ use crate::{
     token::{Token, TokenType, TokenValue},
 };
 
+const FUNCTION: &str = "function";
+const METHOD: &str = "method";
+
 static EOF_TOKEN: Token<'static> = Token {
     token_type: TokenType::Eof,
     lexeme: "",
@@ -100,13 +103,61 @@ fn parse_program<'a>(parser: &mut Parser<'a>) -> Result<Vec<Stmt<'a>>, LoxError>
     Ok(program)
 }
 
-// declaration    → varDecl
+// declaration    → funDecl
+//                | varDecl
 //                | statement ;
 fn parse_declaration<'a>(parser: &mut Parser<'a>) -> Result<Stmt<'a>, LoxError> {
+    if parser.matches(&[TokenType::Fun]) {
+        return parse_function(parser, FUNCTION);
+    }
     if parser.matches(&[TokenType::Var]) {
         return parse_var_declaration(parser);
     }
     parse_statement(parser)
+}
+
+// funDecl        → "fun" function ;
+// function       → IDENTIFIER "(" parameters? ")" block ;
+// parameters     → IDENTIFIER ( "," IDENTIFIER )* ;
+fn parse_function<'a>(parser: &mut Parser<'a>, kind: &str) -> Result<Stmt<'a>, LoxError> {
+    let Ok(name) = parser.consume(&TokenType::Identifier).cloned() else {
+        return Err(LoxError::SyntaxError(format!("Expect {kind} name")));
+    };
+    let Ok(_) = parser.consume(&TokenType::LeftParen) else {
+        return Err(LoxError::SyntaxError(format!(
+            "Expect '(' after {kind} name."
+        )));
+    };
+    let mut params = vec![];
+    if !(parser.check(&TokenType::RightParen)) {
+        loop {
+            if params.len() >= 255 {
+                eprintln!("Can't have more than 255 parameters.");
+            }
+            let Ok(param) = parser.consume(&TokenType::Identifier) else {
+                return Err(LoxError::SyntaxError("Expect parameter name.".into()));
+            };
+            params.push(param.clone());
+            if !parser.matches(&[TokenType::Comma]) {
+                break;
+            }
+        }
+        let Ok(_) = parser.consume(&TokenType::RightParen) else {
+            return Err(LoxError::SyntaxError("Expect ')' after parameters.".into()));
+        };
+    }
+    let Ok(_) = parser.consume(&TokenType::LeftBrace) else {
+        return Err(LoxError::SyntaxError(format!(
+            "Expect '{{' before {kind} body."
+        )));
+    };
+    let body = parse_block(parser)?;
+
+    Ok(Stmt::Function {
+        name: name.clone(),
+        params,
+        body: Box::new(body),
+    })
 }
 
 // varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;

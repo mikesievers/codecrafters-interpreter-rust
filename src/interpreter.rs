@@ -8,17 +8,23 @@ use crate::{
     token::{TokenType, TokenValue},
 };
 
-pub struct Interpreter {
-    env: Option<Environment>,
+pub struct Interpreter<'a> {
+    globals: Environment<'a>,
+    env: Option<Environment<'a>>,
 }
 
-impl Interpreter {
+impl<'a> Interpreter<'a> {
     pub fn new() -> Self {
         // Create global environment with builtin functions
-        let mut env = Environment::new();
-        env.put("clock", Some(LoxValue::Function(CLOCK)));
+        let mut globals = Environment::new();
+        globals.put("clock", Some(LoxValue::BuiltinFunction(CLOCK)));
 
-        Interpreter { env: Some(env) }
+        let env = globals.clone();
+
+        Interpreter {
+            globals,
+            env: Some(env),
+        }
     }
 
     pub fn interpret(&mut self, program: &[Stmt]) -> Result<(), LoxError> {
@@ -107,6 +113,11 @@ impl Interpreter {
                     self.execute(body)?;
                 }
                 Ok(())
+            }
+            Stmt::Function { name, params, body } => {
+                let environment = self.globals.clone();
+
+                todo!()
             }
         }
     }
@@ -199,7 +210,7 @@ impl Interpreter {
                 arguments,
             } => {
                 let callee = match self.evaluate(callee)? {
-                    LoxValue::Function(builtin_function) => builtin_function,
+                    LoxValue::BuiltinFunction(builtin_function) => builtin_function,
                     _ => {
                         return Err(LoxError::RuntimeError(
                             "Callee is not a function".to_string(),

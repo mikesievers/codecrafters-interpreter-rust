@@ -1,10 +1,18 @@
 use std::fmt::Display;
 
-use crate::expr::Expr;
+use itertools::Itertools;
 
+use crate::{expr::Expr, token::Token};
+
+#[derive(Clone, Debug)]
 pub enum Stmt<'a> {
     Block(Vec<Stmt<'a>>),
     Expression(Expr<'a>),
+    Function {
+        name: Token<'a>,
+        params: Vec<Token<'a>>,
+        body: Box<Stmt<'a>>,
+    },
     If {
         condition: Expr<'a>,
         then_branch: Box<Stmt<'a>>,
@@ -50,6 +58,14 @@ impl Display for Stmt<'_> {
                 write!(f, "if ({condition}) \n   {then_branch}{else_string}")
             }
             Stmt::While { condition, body } => write!(f, "while ({condition}) {body}"),
+            Stmt::Function { name, params, body } => {
+                let params_string: String = params
+                    .iter()
+                    .map(std::string::ToString::to_string)
+                    .collect_vec()
+                    .join(", ");
+                write!(f, "<fn {name}({params_string}){{\n{body}\n}}>")
+            }
         }
     }
 }

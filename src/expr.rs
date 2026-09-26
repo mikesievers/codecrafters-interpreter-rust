@@ -4,7 +4,7 @@ use itertools::Itertools;
 
 use crate::token::{Token, TokenValue};
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Expr<'a> {
     Literal(TokenValue<'a>),
     Grouping(Box<Expr<'a>>),
