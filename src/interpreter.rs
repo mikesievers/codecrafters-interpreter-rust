@@ -122,8 +122,8 @@ impl Interpreter {
                     .as_mut()
                     .expect("When defining a function, should always exist.");
 
-                env.assign(
-                    name.lexeme.clone(),
+                env.put(
+                    &name.lexeme,
                     Some(LoxValue::Function(Function::UserFunction {
                         name: name.lexeme.clone(),
                         params: params
@@ -139,7 +139,8 @@ impl Interpreter {
                             )),
                         },
                     })),
-                )
+                );
+                Ok(())
             }
         }
     }
@@ -234,7 +235,6 @@ impl Interpreter {
             } => {
                 let callee = match self.evaluate(callee)? {
                     LoxValue::Function(function) => function,
-                    // LoxValue::Function(f) => f,
                     _ => {
                         return Err(LoxError::RuntimeError(
                             "Callee is not a function".to_string(),
@@ -254,7 +254,7 @@ impl Interpreter {
 
                 let environment = self.globals.clone();
 
-                callee.call(self, arguments)
+                callee.call(self, arguments, environment)
             }
         }
     }
