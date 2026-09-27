@@ -68,6 +68,7 @@ impl Interpreter {
         Ok(())
     }
 
+    #[allow(clippy::too_many_lines)]
     pub fn execute(&mut self, stmt: &Stmt, mut new_environment: Option<Environment>) -> Signal {
         // If an environment is given, execute in that environment rather than the current one
         match stmt {
