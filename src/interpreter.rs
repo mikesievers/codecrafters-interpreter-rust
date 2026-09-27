@@ -37,13 +37,6 @@ impl Interpreter {
         Interpreter { env: Some(env) }
     }
 
-    pub fn get_env_clone(&self) -> Result<EnvRef, LoxError> {
-        match &self.env {
-            Some(env) => Ok(env.clone()),
-            None => Err(LoxError::RuntimeError("Interpreter is missing env.".into())),
-        }
-    }
-
     pub fn interpret(&mut self, program: &[Stmt]) -> Result<(), LoxError> {
         for (idx, stmt) in program.iter().enumerate() {
             match self.execute(stmt, None) {
@@ -70,11 +63,7 @@ impl Interpreter {
     }
 
     #[allow(clippy::too_many_lines)]
-    pub fn execute(
-        &mut self,
-        stmt: &Stmt,
-        mut new_enclosing_environment: Option<EnvRef>,
-    ) -> Signal {
+    pub fn execute(&mut self, stmt: &Stmt, new_enclosing_environment: Option<EnvRef>) -> Signal {
         // If an environment is given, execute in that environment rather than the current one
         match stmt {
             Stmt::Expression(expr) => match self.evaluate(expr) {
@@ -209,7 +198,7 @@ impl Interpreter {
                 );
                 Signal::Ok(LoxValue::Nil)
             }
-            Stmt::Return { keyword, value } => match value {
+            Stmt::Return { value, .. } => match value {
                 Some(e) => match self.evaluate(e) {
                     Ok(v) => Signal::Return(v),
                     Err(e) => Signal::Err(e),
