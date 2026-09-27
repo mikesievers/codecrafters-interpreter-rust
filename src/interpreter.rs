@@ -2,7 +2,7 @@ use crate::{
     environment::Environment,
     expr::Expr,
     lox_error::LoxError,
-    lox_function::{CLOCK, LoxFunction},
+    lox_function::{CLOCK, Function, LoxFunction},
     lox_value::LoxValue,
     stmt::Stmt,
     token::{TokenType, TokenValue},
@@ -115,17 +115,30 @@ impl Interpreter {
                 Ok(())
             }
             Stmt::Function { name, params, body } => {
-                let environment = self.globals.clone();
+                let env = self
+                    .env
+                    .as_mut()
+                    .expect("When defining a function, should always exist.");
 
-                todo!()
+                env.assign(
+                    name.lexeme.clone(),
+                    Some(LoxValue::Function(Function {
+                        declaration: Stmt::Function {
+                            name: name.clone(),
+                            params: params.clone(),
+                            body: body.clone(),
+                        },
+                    })),
+                )
             }
         }
     }
 
+    #[allow(clippy::too_many_lines)]
     pub fn evaluate(&mut self, expr: &Expr) -> Result<LoxValue, LoxError> {
         match expr {
             Expr::Literal(token_value) => match token_value {
-                TokenValue::String(s) => Ok(LoxValue::String(s.to_string())),
+                TokenValue::String(s) => Ok(LoxValue::String(s.clone())),
                 TokenValue::Number(n) => Ok(LoxValue::Number(*n)),
                 TokenValue::Boolean(b) => Ok(LoxValue::Boolean(*b)),
                 TokenValue::Nil => Ok(LoxValue::Nil),
@@ -211,6 +224,7 @@ impl Interpreter {
             } => {
                 let callee = match self.evaluate(callee)? {
                     LoxValue::BuiltinFunction(builtin_function) => builtin_function,
+                    // LoxValue::Function(f) => f,
                     _ => {
                         return Err(LoxError::RuntimeError(
                             "Callee is not a function".to_string(),
@@ -227,6 +241,9 @@ impl Interpreter {
                         "Wrong number of arguments for function".to_string(),
                     ));
                 }
+
+                let environment = self.globals.clone();
+
                 callee.call(self, arguments)
             }
         }
