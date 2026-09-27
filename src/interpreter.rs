@@ -159,6 +159,7 @@ impl Interpreter {
                 );
                 Ok(())
             }
+            Stmt::Return { keyword, value } => todo!("Implement return statement interpretation"),
         }
     }
 

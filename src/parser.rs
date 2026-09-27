@@ -186,6 +186,7 @@ fn parse_var_declaration(parser: &mut Parser) -> Result<Stmt, LoxError> {
 //                | forStmt
 //                | ifStmt
 //                | printStmt
+//                | returnStmt
 //                | whileStmt
 //                | block ;
 fn parse_statement(parser: &mut Parser) -> Result<Stmt, LoxError> {
@@ -197,6 +198,9 @@ fn parse_statement(parser: &mut Parser) -> Result<Stmt, LoxError> {
     }
     if parser.matches(&[TokenType::Print]) {
         return parse_print_statement(parser);
+    }
+    if parser.matches(&[TokenType::Return]) {
+        return parse_return_statement(parser);
     }
     if parser.matches(&[TokenType::While]) {
         return parse_while_statement(parser);
@@ -298,6 +302,21 @@ fn parse_for_statement(parser: &mut Parser) -> Result<Stmt, LoxError> {
     }
 
     Ok(body)
+}
+
+// returnStmt     → "return" expression? ";" ;
+fn parse_return_statement(parser: &mut Parser) -> Result<Stmt, LoxError> {
+    let keyword = parser.previous().clone();
+    let mut value = None;
+    if !parser.check(&TokenType::Semicolon) {
+        value = Some(parse_expression(parser)?);
+    }
+
+    if parser.consume(&TokenType::Semicolon).is_err() {
+        return Err(LoxError::SyntaxError("Expect ';' after statement.".into()));
+    }
+
+    Ok(Stmt::Return { keyword, value })
 }
 
 fn parse_while_statement(parser: &mut Parser) -> Result<Stmt, LoxError> {

@@ -19,6 +19,10 @@ pub enum Stmt {
         else_branch: Option<Box<Stmt>>,
     },
     Print(Expr),
+    Return {
+        keyword: Token,
+        value: Option<Expr>,
+    },
     Var {
         name: String,
         initializer: Option<Expr>,
@@ -66,6 +70,7 @@ impl Display for Stmt {
                     .join(", ");
                 write!(f, "<fn {name}({params_string}){{\n{body}\n}}>")
             }
+            Stmt::Return { .. } => write!(f, "return <expr display not implemented>"),
         }
     }
 }
