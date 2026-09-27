@@ -34,10 +34,7 @@ impl Interpreter {
 
         let env = globals.clone();
 
-        Interpreter {
-            globals,
-            env: Some(env),
-        }
+        Interpreter { env: Some(env) }
     }
 
     pub fn get_env_clone(&self) -> Result<EnvRef, LoxError> {
