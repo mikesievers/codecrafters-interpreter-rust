@@ -52,10 +52,10 @@ impl Function {
         match self {
             Function::BuiltinFunction { call, .. } => call(interpreter, arguments),
             Function::UserFunction {
-                name,
                 params,
                 body,
                 closure,
+                ..
             } => {
                 // Create a fresh environment for this call, enclosing the closure.
                 // Each call must get its own environment so that recursive calls

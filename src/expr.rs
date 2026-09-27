@@ -60,7 +60,7 @@ impl Display for Expr {
                 "{callee}({})",
                 arguments
                     .iter()
-                    .map(|s| s.to_string())
+                    .map(std::string::ToString::to_string)
                     .collect_vec()
                     .join(",")
             ),
