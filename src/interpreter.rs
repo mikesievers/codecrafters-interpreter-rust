@@ -118,15 +118,25 @@ impl Interpreter {
                         self.env = Some(Environment::new_enclosed(outer_env));
                     }
                 }
-                // Execute statements
-                for stmt in stmts {
-                    match self.execute(stmt, None) {
-                        Signal::Ok(lox_value) => Signal::Ok(lox_value),
-                        Signal::Return(lox_value) => return Signal::Return(lox_value),
-                        Signal::Err(lox_error) => return Signal::Err(lox_error),
-                    };
-                }
-                // recreate old env
+                // Execute statements, short-circuiting on Return/Err
+                let result = {
+                    let mut short_circuit: Option<Signal> = None;
+                    for stmt in stmts {
+                        match self.execute(stmt, None) {
+                            Signal::Ok(_) => {}
+                            Signal::Return(lox_value) => {
+                                short_circuit = Some(Signal::Return(lox_value));
+                                break;
+                            }
+                            Signal::Err(lox_error) => {
+                                short_circuit = Some(Signal::Err(lox_error));
+                                break;
+                            }
+                        }
+                    }
+                    short_circuit.unwrap_or(Signal::Ok(LoxValue::Nil))
+                };
+                // recreate old env (always, even when short-circuited by a return)
                 let enclosing = self
                     .env
                     .as_mut()
@@ -136,7 +146,7 @@ impl Interpreter {
                         "At end of block, the environment from the start must still be present",
                     );
                 self.env = Some(*enclosing);
-                Signal::Ok(LoxValue::Nil)
+                result
             }
             Stmt::If {
                 condition,

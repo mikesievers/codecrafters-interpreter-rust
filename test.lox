@@ -1,2 +1,13 @@
-fun bar() { return 10; }
-print bar();
+
+fun fib(n) {
+  if (n < 2) {
+    return n;
+  }
+
+  var two = fib(n-2);
+  var one = fib(n-1);
+  return one + two;
+}
+
+
+print fib(10);
