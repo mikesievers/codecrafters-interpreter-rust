@@ -43,7 +43,7 @@ impl Function {
         arguments: Vec<LoxValue>,
     ) -> Result<LoxValue, LoxError> {
         match self {
-            Function::BuiltinFunction { .. } => self.call(interpreter, arguments),
+            Function::BuiltinFunction { call, .. } => call(interpreter, arguments),
             Function::UserFunction { name, params, body } => todo!(),
         }
     }
