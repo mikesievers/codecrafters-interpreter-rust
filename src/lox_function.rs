@@ -3,7 +3,10 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use crate::{interpreter::Interpreter, lox_error::LoxError, lox_value::LoxValue, stmt::Stmt};
+use crate::{
+    environment::EnvRef, interpreter::Interpreter, lox_error::LoxError, lox_value::LoxValue,
+    stmt::Stmt,
+};
 
 #[derive(Debug, Clone)]
 pub enum Function {
@@ -14,6 +17,7 @@ pub enum Function {
     },
     UserFunction {
         name: String,
+        closure: EnvRef,
         params: Vec<String>,
         body: Vec<Stmt>,
     },
@@ -44,13 +48,17 @@ impl Function {
     ) -> Result<LoxValue, LoxError> {
         match self {
             Function::BuiltinFunction { call, .. } => call(interpreter, arguments),
-            Function::UserFunction { name, params, body } => {
-                let mut environment = interpreter.clone_globals();
+            Function::UserFunction {
+                name,
+                params,
+                body,
+                closure,
+            } => {
                 // Store the parameters in the environment
                 for (name, value) in params.iter().zip(arguments.iter()) {
-                    environment.put(name, Some(value.clone()));
+                    closure.borrow_mut().put(name, Some(value.clone()));
                 }
-                match interpreter.execute(&Stmt::Block(body.clone()), Some(environment)) {
+                match interpreter.execute(&Stmt::Block(body.clone()), Some(closure.clone())) {
                     crate::interpreter::Signal::Ok(lox_value)
                     | crate::interpreter::Signal::Return(lox_value) => Ok(lox_value),
                     crate::interpreter::Signal::Err(lox_error) => Err(lox_error),

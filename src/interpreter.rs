@@ -1,7 +1,7 @@
 use itertools::Itertools;
 
 use crate::{
-    environment::Environment,
+    environment::{EnvRef, Environment},
     expr::Expr,
     lox_error::LoxError,
     lox_function::{CLOCK, Function},
@@ -11,8 +11,7 @@ use crate::{
 };
 
 pub struct Interpreter {
-    globals: Environment,
-    env: Option<Environment>,
+    env: Option<EnvRef>,
 }
 
 // Create a Signal to return from evaluation/execution, to allow
@@ -28,8 +27,10 @@ pub enum Signal {
 impl Interpreter {
     pub fn new() -> Self {
         // Create global environment with builtin functions
-        let mut globals = Environment::new();
-        globals.put("clock", Some(LoxValue::Function(CLOCK)));
+        let globals = Environment::new_global();
+        globals
+            .borrow_mut()
+            .put("clock", Some(LoxValue::Function(CLOCK)));
 
         let env = globals.clone();
 
@@ -39,8 +40,11 @@ impl Interpreter {
         }
     }
 
-    pub fn clone_globals(&self) -> Environment {
-        self.globals.clone()
+    pub fn get_env_clone(&self) -> Result<EnvRef, LoxError> {
+        match &self.env {
+            Some(env) => Ok(env.clone()),
+            None => Err(LoxError::RuntimeError("Interpreter is missing env.".into())),
+        }
     }
 
     pub fn interpret(&mut self, program: &[Stmt]) -> Result<(), LoxError> {
@@ -69,7 +73,11 @@ impl Interpreter {
     }
 
     #[allow(clippy::too_many_lines)]
-    pub fn execute(&mut self, stmt: &Stmt, mut new_environment: Option<Environment>) -> Signal {
+    pub fn execute(
+        &mut self,
+        stmt: &Stmt,
+        mut new_enclosing_environment: Option<EnvRef>,
+    ) -> Signal {
         // If an environment is given, execute in that environment rather than the current one
         match stmt {
             Stmt::Expression(expr) => match self.evaluate(expr) {
@@ -92,32 +100,29 @@ impl Interpreter {
                     self.env
                         .as_mut()
                         .expect("Interpreter must have an Environment")
+                        .borrow_mut()
                         .put(name.clone(), Some(value));
                     Signal::Ok(LoxValue::Nil)
                 } else {
                     self.env
                         .as_mut()
                         .expect("Interpreter must have an Environment")
+                        .borrow_mut()
                         .put(name.clone(), None);
                     Signal::Ok(LoxValue::Nil)
                 }
             }
             Stmt::Block(stmts) => {
-                // Create new env
-                // making the old env the enclosing env
+                // Create new env for the block
+                // If an enclosing env has been specified (i.e. for enclosures),
+                // use that. Otherwise use the current enclosing/outer env
                 let outer_env = self
                     .env
                     .take()
                     .expect("Interpreter must have an Environment");
-                match new_environment.take() {
-                    Some(mut new_environment) => {
-                        new_environment.set_enclosing(outer_env);
-                        self.env = Some(new_environment);
-                    }
-                    None => {
-                        self.env = Some(Environment::new_enclosed(outer_env));
-                    }
-                }
+                self.env = Some(Environment::new_child(
+                    &new_enclosing_environment.unwrap_or(outer_env.clone()),
+                ));
                 // Execute statements, short-circuiting on Return/Err
                 let result = {
                     let mut short_circuit: Option<Signal> = None;
@@ -137,15 +142,7 @@ impl Interpreter {
                     short_circuit.unwrap_or(Signal::Ok(LoxValue::Nil))
                 };
                 // recreate old env (always, even when short-circuited by a return)
-                let enclosing = self
-                    .env
-                    .as_mut()
-                    .expect("Interpreter must have an Environment")
-                    .take_enclosing()
-                    .expect(
-                        "At end of block, the environment from the start must still be present",
-                    );
-                self.env = Some(*enclosing);
+                self.env = Some(outer_env);
                 result
             }
             Stmt::If {
@@ -191,10 +188,13 @@ impl Interpreter {
                     .as_mut()
                     .expect("When defining a function, should always exist.");
 
-                env.put(
+                let closure = env.clone();
+
+                env.borrow_mut().put(
                     &name.lexeme,
                     Some(LoxValue::Function(Function::UserFunction {
                         name: name.lexeme.clone(),
+                        closure: Environment::new_child(&closure),
                         params: params
                             .iter()
                             .map(|token| token.lexeme.clone())
@@ -275,6 +275,7 @@ impl Interpreter {
                     .env
                     .as_ref()
                     .expect("Interpreter must have an env")
+                    .borrow()
                     .get(name)?
                 {
                     Some(val) => Ok(val),
@@ -286,6 +287,7 @@ impl Interpreter {
                 self.env
                     .as_mut()
                     .expect("Interpreter must have an env")
+                    .borrow_mut()
                     .assign(name.clone(), Some(evaluated_value))?;
                 self.evaluate(&Expr::Variable(name.clone()))
             }
