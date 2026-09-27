@@ -200,7 +200,13 @@ impl Interpreter {
                 );
                 Signal::Ok(LoxValue::Nil)
             }
-            Stmt::Return { keyword, value } => todo!("Implement return statement interpretation"),
+            Stmt::Return { keyword, value } => match value {
+                Some(e) => match self.evaluate(e) {
+                    Ok(v) => Signal::Return(v),
+                    Err(e) => Signal::Err(e),
+                },
+                None => Signal::Return(LoxValue::Nil),
+            },
         }
     }
 
