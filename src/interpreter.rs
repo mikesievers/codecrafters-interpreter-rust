@@ -117,9 +117,10 @@ impl Interpreter {
                     .env
                     .take()
                     .expect("Interpreter must have an Environment");
-                self.env = Some(Environment::new_child(
-                    &new_enclosing_environment.unwrap_or(outer_env.clone()),
-                ));
+                self.env = match new_enclosing_environment {
+                    Some(closure) => Some(closure.clone()),
+                    None => Some(Environment::new_child(&outer_env)),
+                };
                 // Execute statements, short-circuiting on Return/Err
                 let result = {
                     let mut short_circuit: Option<Signal> = None;
@@ -191,7 +192,7 @@ impl Interpreter {
                     &name.lexeme,
                     Some(LoxValue::Function(Function::UserFunction {
                         name: name.lexeme.clone(),
-                        closure: Environment::new_child(&closure),
+                        closure,
                         params: params
                             .iter()
                             .map(|token| token.lexeme.clone())

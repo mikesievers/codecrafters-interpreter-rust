@@ -4,7 +4,10 @@ use std::{
 };
 
 use crate::{
-    environment::EnvRef, interpreter::Interpreter, lox_error::LoxError, lox_value::LoxValue,
+    environment::{EnvRef, Environment},
+    interpreter::Interpreter,
+    lox_error::LoxError,
+    lox_value::LoxValue,
     stmt::Stmt,
 };
 
@@ -54,11 +57,15 @@ impl Function {
                 body,
                 closure,
             } => {
-                // Store the parameters in the environment
+                // Create a fresh environment for this call, enclosing the closure.
+                // Each call must get its own environment so that recursive calls
+                // don't clobber each other's parameters (e.g. `n` in fib).
+                let call_env = Environment::new_child(closure);
+                // Store the parameters in the new environment
                 for (name, value) in params.iter().zip(arguments.iter()) {
-                    closure.borrow_mut().put(name, Some(value.clone()));
+                    call_env.borrow_mut().put(name, Some(value.clone()));
                 }
-                match interpreter.execute(&Stmt::Block(body.clone()), Some(closure.clone())) {
+                match interpreter.execute(&Stmt::Block(body.clone()), Some(call_env)) {
                     crate::interpreter::Signal::Ok(lox_value)
                     | crate::interpreter::Signal::Return(lox_value) => Ok(lox_value),
                     crate::interpreter::Signal::Err(lox_error) => Err(lox_error),
