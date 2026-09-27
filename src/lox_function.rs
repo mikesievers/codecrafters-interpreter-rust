@@ -23,9 +23,9 @@ impl Display for Function {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Function::BuiltinFunction { name, .. } => {
-                write!(f, "<fn {}>", name)
+                write!(f, "{name}")
             }
-            Function::UserFunction { name, .. } => write!(f, "<fn {}>", name),
+            Function::UserFunction { name, .. } => write!(f, "{name}"),
         }
     }
 }
