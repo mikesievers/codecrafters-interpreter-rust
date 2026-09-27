@@ -29,9 +29,13 @@ impl Interpreter {
         }
     }
 
+    pub fn clone_globals(&self) -> Environment {
+        self.globals.clone()
+    }
+
     pub fn interpret(&mut self, program: &[Stmt]) -> Result<(), LoxError> {
         for (idx, stmt) in program.iter().enumerate() {
-            match self.execute(stmt) {
+            match self.execute(stmt, None) {
                 Ok(()) => (),
                 Err(LoxError::RuntimeError(e)) => {
                     eprintln!("{e}");
@@ -48,7 +52,12 @@ impl Interpreter {
         Ok(())
     }
 
-    fn execute(&mut self, stmt: &Stmt) -> Result<(), LoxError> {
+    pub fn execute(
+        &mut self,
+        stmt: &Stmt,
+        mut new_environment: Option<Environment>,
+    ) -> Result<(), LoxError> {
+        // If an environment is given, execute in that environment rather than the current one
         match stmt {
             Stmt::Expression(expr) => match self.evaluate(expr) {
                 Ok(_) => Ok(()),
@@ -81,10 +90,18 @@ impl Interpreter {
                     .env
                     .take()
                     .expect("Interpreter must have an Environment");
-                self.env = Some(Environment::new_enclosed(outer_env));
+                match new_environment.take() {
+                    Some(mut new_environment) => {
+                        new_environment.set_enclosing(outer_env);
+                        self.env = Some(new_environment);
+                    }
+                    None => {
+                        self.env = Some(Environment::new_enclosed(outer_env));
+                    }
+                }
                 // Execute statements
                 for stmt in stmts {
-                    self.execute(stmt)?;
+                    self.execute(stmt, None)?;
                 }
                 // recreate old env
                 let enclosing = self
@@ -104,15 +121,15 @@ impl Interpreter {
                 else_branch,
             } => {
                 if self.evaluate(condition)?.is_truthy() {
-                    self.execute(then_branch)?;
+                    self.execute(then_branch, None)?;
                 } else if let Some(else_branch) = else_branch {
-                    self.execute(else_branch)?;
+                    self.execute(else_branch, None)?;
                 }
                 Ok(())
             }
             Stmt::While { condition, body } => {
                 while self.evaluate(condition)?.is_truthy() {
-                    self.execute(body)?;
+                    self.execute(body, None)?;
                 }
                 Ok(())
             }
@@ -252,9 +269,7 @@ impl Interpreter {
                     ));
                 }
 
-                let environment = self.globals.clone();
-
-                callee.call(self, arguments, environment)
+                callee.call(self, arguments)
             }
         }
     }

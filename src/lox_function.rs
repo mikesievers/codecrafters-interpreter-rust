@@ -3,17 +3,14 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use crate::{
-    environment::Environment, interpreter::Interpreter, lox_error::LoxError, lox_value::LoxValue,
-    stmt::Stmt,
-};
+use crate::{interpreter::Interpreter, lox_error::LoxError, lox_value::LoxValue, stmt::Stmt};
 
 #[derive(Debug, Clone)]
 pub enum Function {
     BuiltinFunction {
         name: &'static str,
         n_args: usize,
-        call: fn(&mut Interpreter, Vec<LoxValue>, Environment) -> Result<LoxValue, LoxError>,
+        call: fn(&mut Interpreter, Vec<LoxValue>) -> Result<LoxValue, LoxError>,
     },
     UserFunction {
         name: String,
@@ -44,11 +41,18 @@ impl Function {
         &self,
         interpreter: &mut Interpreter,
         arguments: Vec<LoxValue>,
-        environment: Environment,
     ) -> Result<LoxValue, LoxError> {
         match self {
-            Function::BuiltinFunction { call, .. } => call(interpreter, arguments, environment),
-            Function::UserFunction { name, params, body } => todo!("function call"),
+            Function::BuiltinFunction { call, .. } => call(interpreter, arguments),
+            Function::UserFunction { name, params, body } => {
+                let mut environment = interpreter.clone_globals();
+                // Store the parameters in the environment
+                for (name, value) in params.iter().zip(arguments.iter()) {
+                    environment.put(name, Some(value.clone()));
+                }
+                interpreter.execute(&Stmt::Block(body.clone()), Some(environment))?;
+                Ok(LoxValue::Nil)
+            }
         }
     }
 }
@@ -59,7 +63,7 @@ impl Function {
 pub const CLOCK: Function = Function::BuiltinFunction {
     name: "clock",
     n_args: 0,
-    call: |_interpreter, _arguments, _environment| {
+    call: |_interpreter, _arguments| {
         // Ignore the warning of converting from u128 to f64, the epoch is not
         // supposed to reach that size anytime soon
         #[allow(clippy::cast_precision_loss)]

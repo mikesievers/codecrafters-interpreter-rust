@@ -23,6 +23,10 @@ impl Environment {
         }
     }
 
+    pub fn set_enclosing(&mut self, env: Environment) {
+        self.enclosing = Some(Box::new(env))
+    }
+
     pub fn take_enclosing(&mut self) -> Option<Box<Environment>> {
         self.enclosing.take()
     }
