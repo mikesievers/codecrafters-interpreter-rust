@@ -1,8 +1,10 @@
+use itertools::Itertools;
+
 use crate::{
     environment::Environment,
     expr::Expr,
     lox_error::LoxError,
-    lox_function::{CLOCK, Function, LoxFunction},
+    lox_function::{CLOCK, Function},
     lox_value::LoxValue,
     stmt::Stmt,
     token::{TokenType, TokenValue},
@@ -17,7 +19,7 @@ impl Interpreter {
     pub fn new() -> Self {
         // Create global environment with builtin functions
         let mut globals = Environment::new();
-        globals.put("clock", Some(LoxValue::BuiltinFunction(CLOCK)));
+        globals.put("clock", Some(LoxValue::Function(CLOCK)));
 
         let env = globals.clone();
 
@@ -122,11 +124,19 @@ impl Interpreter {
 
                 env.assign(
                     name.lexeme.clone(),
-                    Some(LoxValue::Function(Function {
-                        declaration: Stmt::Function {
-                            name: name.clone(),
-                            params: params.clone(),
-                            body: body.clone(),
+                    Some(LoxValue::Function(Function::UserFunction {
+                        name: name.lexeme.clone(),
+                        params: params
+                            .iter()
+                            .map(|token| token.lexeme.clone())
+                            .collect_vec(),
+                        // body is a Box and needs dereferencing
+                        body: match &**body {
+                            Stmt::Block(stmts) => stmts.clone(),
+                            _ => return Err(LoxError::RuntimeError(
+                                "Encountered a function with something other then a Block as Stmt."
+                                    .into(),
+                            )),
                         },
                     })),
                 )
@@ -223,7 +233,7 @@ impl Interpreter {
                 arguments,
             } => {
                 let callee = match self.evaluate(callee)? {
-                    LoxValue::BuiltinFunction(builtin_function) => builtin_function,
+                    LoxValue::Function(function) => function,
                     // LoxValue::Function(f) => f,
                     _ => {
                         return Err(LoxError::RuntimeError(

@@ -1,63 +1,59 @@
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{
+    fmt::Display,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use crate::{interpreter::Interpreter, lox_error::LoxError, lox_value::LoxValue, stmt::Stmt};
 
-pub trait LoxFunction {
-    fn arity(&self) -> usize;
-    fn call(
-        &self,
-        interpreter: &mut Interpreter,
-        arguments: Vec<LoxValue>,
-    ) -> Result<LoxValue, LoxError>;
-}
-
 #[derive(Debug, Clone)]
-pub struct BuiltinFunction {
-    n_args: usize,
-    call: fn(&mut Interpreter, Vec<LoxValue>) -> Result<LoxValue, LoxError>,
+pub enum Function {
+    BuiltinFunction {
+        name: &'static str,
+        n_args: usize,
+        call: fn(&mut Interpreter, Vec<LoxValue>) -> Result<LoxValue, LoxError>,
+    },
+    UserFunction {
+        name: String,
+        params: Vec<String>,
+        body: Vec<Stmt>,
+    },
 }
 
-impl LoxFunction for BuiltinFunction {
-    fn arity(&self) -> usize {
-        self.n_args
-    }
-    fn call(
-        &self,
-        interpreter: &mut Interpreter,
-        arguments: Vec<LoxValue>,
-    ) -> Result<LoxValue, LoxError> {
-        (self.call)(interpreter, arguments)
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct Function {
-    pub declaration: Stmt,
-}
-
-impl LoxFunction for Function {
-    fn arity(&self) -> usize {
-        match &self.declaration {
-            Stmt::Function { params, .. } => params.len(),
-            _ => {
-                panic!("A Function should only ever have a Stmt::Function as declaration.")
+impl Display for Function {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Function::BuiltinFunction { name, .. } => {
+                write!(f, "<fn {}>", name)
             }
+            Function::UserFunction { name, .. } => write!(f, "<fn {}>", name),
         }
     }
+}
 
-    fn call(
+impl Function {
+    pub fn arity(&self) -> usize {
+        match self {
+            Function::BuiltinFunction { n_args, .. } => *n_args,
+            Function::UserFunction { params, .. } => params.len(),
+        }
+    }
+    pub fn call(
         &self,
         interpreter: &mut Interpreter,
         arguments: Vec<LoxValue>,
     ) -> Result<LoxValue, LoxError> {
-        todo!()
+        match self {
+            Function::BuiltinFunction { .. } => self.call(interpreter, arguments),
+            Function::UserFunction { name, params, body } => todo!(),
+        }
     }
 }
 
 // Built in functions
 
 // clock()
-pub const CLOCK: BuiltinFunction = BuiltinFunction {
+pub const CLOCK: Function = Function::BuiltinFunction {
+    name: "clock",
     n_args: 0,
     call: |_interpreter, _arguments| {
         // Ignore the warning of converting from u128 to f64, the epoch is not

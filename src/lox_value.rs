@@ -3,11 +3,7 @@ use std::{
     ops::{Add, Div, Mul, Neg, Not, Sub},
 };
 
-use crate::{
-    lox_error::LoxError,
-    lox_function::{BuiltinFunction, Function},
-    stmt::Stmt,
-};
+use crate::{lox_error::LoxError, lox_function::Function};
 
 // The LoxValue is almost identical to the TokenValue
 // The exception is the String - while the TokenValue
@@ -20,7 +16,6 @@ pub enum LoxValue {
     Number(f64),
     Boolean(bool),
     Nil,
-    BuiltinFunction(BuiltinFunction),
     Function(Function),
 }
 
@@ -31,13 +26,7 @@ impl Display for LoxValue {
             LoxValue::Number(n) => format!("{n}"),
             LoxValue::Boolean(b) => b.to_string(),
             LoxValue::Nil => "nil".to_string(),
-            LoxValue::BuiltinFunction(_lox_function) => {
-                todo!("Make function print as <fn funcname>")
-            }
-            LoxValue::Function(function) => match &function.declaration {
-                Stmt::Function { name, .. } => format!("<fn {}>", name.lexeme),
-                _ => "<fn ?>".to_string(),
-            },
+            LoxValue::Function(function) => format!("<fn {function}>"),
         };
         write!(f, "{output}")
     }
