@@ -50,8 +50,11 @@ impl Function {
                 for (name, value) in params.iter().zip(arguments.iter()) {
                     environment.put(name, Some(value.clone()));
                 }
-                interpreter.execute(&Stmt::Block(body.clone()), Some(environment))?;
-                Ok(LoxValue::Nil)
+                match interpreter.execute(&Stmt::Block(body.clone()), Some(environment)) {
+                    crate::interpreter::Signal::Ok(lox_value)
+                    | crate::interpreter::Signal::Return(lox_value) => Ok(lox_value),
+                    crate::interpreter::Signal::Err(lox_error) => Err(lox_error),
+                }
             }
         }
     }

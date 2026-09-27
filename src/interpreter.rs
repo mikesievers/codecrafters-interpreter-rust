@@ -15,6 +15,16 @@ pub struct Interpreter {
     env: Option<Environment>,
 }
 
+// Create a Signal to return from evaluation/execution, to allow
+// short circuiting for return statements.
+// Java can solve this with exceptions to unwind call stacks,
+// for Rust an enum looks more idiomatic
+pub enum Signal {
+    Ok(LoxValue),
+    Return(LoxValue),
+    Err(LoxError),
+}
+
 impl Interpreter {
     pub fn new() -> Self {
         // Create global environment with builtin functions
@@ -36,51 +46,59 @@ impl Interpreter {
     pub fn interpret(&mut self, program: &[Stmt]) -> Result<(), LoxError> {
         for (idx, stmt) in program.iter().enumerate() {
             match self.execute(stmt, None) {
-                Ok(()) => (),
-                Err(LoxError::RuntimeError(e)) => {
+                Signal::Ok(_) => (),
+                Signal::Err(LoxError::RuntimeError(e)) => {
                     eprintln!("{e}");
                     eprintln!("[line {}]", idx + 1);
                     return Err(LoxError::RuntimeError(e));
                 }
-                Err(LoxError::SyntaxError(e)) => {
+                Signal::Err(LoxError::SyntaxError(e)) => {
                     eprintln!("{e}");
                     eprintln!("[line {}]", idx + 1);
                     return Err(LoxError::SyntaxError(e));
+                }
+                Signal::Return(_) => {
+                    eprintln!("Return statement found at global level");
+                    return Err(LoxError::RuntimeError(
+                        "Global level return statement".into(),
+                    ));
                 }
             }
         }
         Ok(())
     }
 
-    pub fn execute(
-        &mut self,
-        stmt: &Stmt,
-        mut new_environment: Option<Environment>,
-    ) -> Result<(), LoxError> {
+    pub fn execute(&mut self, stmt: &Stmt, mut new_environment: Option<Environment>) -> Signal {
         // If an environment is given, execute in that environment rather than the current one
         match stmt {
             Stmt::Expression(expr) => match self.evaluate(expr) {
-                Ok(_) => Ok(()),
-                Err(e) => Err(e),
+                Ok(_) => Signal::Ok(LoxValue::Nil),
+                Err(e) => Signal::Err(e),
             },
-            Stmt::Print(expr) => {
-                println!("{}", self.evaluate(expr)?);
-                Ok(())
-            }
+            Stmt::Print(expr) => match self.evaluate(expr) {
+                Ok(v) => {
+                    println!("{v}");
+                    Signal::Ok(LoxValue::Nil)
+                }
+                Err(e) => Signal::Err(e),
+            },
             Stmt::Var { name, initializer } => {
                 if let Some(expr) = initializer {
-                    let value = self.evaluate(expr)?;
+                    let value = match self.evaluate(expr) {
+                        Ok(v) => v,
+                        Err(e) => return Signal::Err(e),
+                    };
                     self.env
                         .as_mut()
                         .expect("Interpreter must have an Environment")
                         .put(name.clone(), Some(value));
-                    Ok(())
+                    Signal::Ok(LoxValue::Nil)
                 } else {
                     self.env
                         .as_mut()
                         .expect("Interpreter must have an Environment")
                         .put(name.clone(), None);
-                    Ok(())
+                    Signal::Ok(LoxValue::Nil)
                 }
             }
             Stmt::Block(stmts) => {
@@ -101,7 +119,11 @@ impl Interpreter {
                 }
                 // Execute statements
                 for stmt in stmts {
-                    self.execute(stmt, None)?;
+                    match self.execute(stmt, None) {
+                        Signal::Ok(lox_value) => Signal::Ok(lox_value),
+                        Signal::Return(lox_value) => return Signal::Return(lox_value),
+                        Signal::Err(lox_error) => return Signal::Err(lox_error),
+                    };
                 }
                 // recreate old env
                 let enclosing = self
@@ -113,25 +135,44 @@ impl Interpreter {
                         "At end of block, the environment from the start must still be present",
                     );
                 self.env = Some(*enclosing);
-                Ok(())
+                Signal::Ok(LoxValue::Nil)
             }
             Stmt::If {
                 condition,
                 then_branch,
                 else_branch,
             } => {
-                if self.evaluate(condition)?.is_truthy() {
-                    self.execute(then_branch, None)?;
+                let expr_result = match self.evaluate(condition) {
+                    Ok(v) => v,
+                    Err(e) => return Signal::Err(e),
+                };
+                if expr_result.is_truthy() {
+                    match self.execute(then_branch, None) {
+                        Signal::Ok(lox_value) => Signal::Ok(lox_value),
+                        Signal::Return(lox_value) => return Signal::Return(lox_value),
+                        Signal::Err(lox_error) => return Signal::Err(lox_error),
+                    };
                 } else if let Some(else_branch) = else_branch {
-                    self.execute(else_branch, None)?;
+                    match self.execute(else_branch, None) {
+                        Signal::Ok(lox_value) => Signal::Ok(lox_value),
+                        Signal::Return(lox_value) => return Signal::Return(lox_value),
+                        Signal::Err(lox_error) => return Signal::Err(lox_error),
+                    };
                 }
-                Ok(())
+                Signal::Ok(LoxValue::Nil)
             }
             Stmt::While { condition, body } => {
-                while self.evaluate(condition)?.is_truthy() {
-                    self.execute(body, None)?;
+                while match self.evaluate(condition) {
+                    Ok(v) => v.is_truthy(),
+                    Err(e) => return Signal::Err(e),
+                } {
+                    match self.execute(body, None) {
+                        Signal::Ok(lox_value) => Signal::Ok(lox_value),
+                        Signal::Return(lox_value) => return Signal::Return(lox_value),
+                        Signal::Err(lox_error) => return Signal::Err(lox_error),
+                    };
                 }
-                Ok(())
+                Signal::Ok(LoxValue::Nil)
             }
             Stmt::Function { name, params, body } => {
                 let env = self
@@ -150,14 +191,14 @@ impl Interpreter {
                         // body is a Box and needs dereferencing
                         body: match &**body {
                             Stmt::Block(stmts) => stmts.clone(),
-                            _ => return Err(LoxError::RuntimeError(
+                            _ => return Signal::Err(LoxError::RuntimeError(
                                 "Encountered a function with something other then a Block as Stmt."
                                     .into(),
                             )),
                         },
                     })),
                 );
-                Ok(())
+                Signal::Ok(LoxValue::Nil)
             }
             Stmt::Return { keyword, value } => todo!("Implement return statement interpretation"),
         }
