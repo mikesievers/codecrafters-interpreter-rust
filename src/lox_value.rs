@@ -102,6 +102,9 @@ impl Add for LoxValue {
     fn add(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
             (LoxValue::String(l), LoxValue::String(r)) => Ok(LoxValue::String(l + &r)),
+            // The following two lines would allow concatenation of string and number into a string
+            (LoxValue::String(l), LoxValue::Number(r)) => Ok(LoxValue::String(l + &r.to_string())),
+            (LoxValue::Number(l), LoxValue::String(r)) => Ok(LoxValue::String(l.to_string() + &r)),
             (LoxValue::Number(l), LoxValue::Number(r)) => Ok(LoxValue::Number(l + r)),
             _ => Err(LoxError::RuntimeError(
                 "Operands must be numbers.".to_string(),
