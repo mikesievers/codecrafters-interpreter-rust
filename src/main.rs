@@ -109,6 +109,10 @@ fn main() -> ExitCode {
                 }
             };
 
+            let mut resolver = Resolver::new();
+            // TODO: use the resulting locals map
+            let _locals = resolver.resolve(&program);
+
             let mut interpreter = Interpreter::new();
 
             match interpreter.interpret(&program) {

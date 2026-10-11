@@ -4,7 +4,7 @@ use itertools::Itertools;
 
 use crate::token::{Token, TokenValue};
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct ExprId(pub usize);
 
 #[derive(Clone, Debug, PartialEq)]
