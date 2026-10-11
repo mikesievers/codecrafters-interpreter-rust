@@ -24,6 +24,7 @@ use crate::resolver::Resolver;
 const EXIT_CODE_SYNTAX_ERROR: u8 = 65;
 const EXIT_CODE_RUNTIME_ERROR: u8 = 70;
 
+#[allow(clippy::uninlined_format_args)]
 fn main() -> ExitCode {
     let args: Vec<String> = env::args().collect();
     if args.len() < 3 {
@@ -111,7 +112,9 @@ fn main() -> ExitCode {
 
             let mut resolver = Resolver::new();
             // TODO: use the resulting locals map
-            let _locals = resolver.resolve(&program);
+            let Ok(locals) = resolver.resolve(&program) else {
+                return ExitCode::from(EXIT_CODE_SYNTAX_ERROR);
+            };
 
             let mut interpreter = Interpreter::new();
 

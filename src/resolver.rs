@@ -36,7 +36,7 @@ impl Resolver {
                 }
                 self.end_scope();
             }
-            Stmt::Expression(expr) => todo!(),
+            Stmt::Expression(expr) => self.resolve_expr(expr)?,
             Stmt::Function { name, params, body } => {
                 self.declare(&name.lexeme);
                 self.define(&name.lexeme);
@@ -52,9 +52,21 @@ impl Resolver {
                 condition,
                 then_branch,
                 else_branch,
-            } => todo!(),
-            Stmt::Print(expr) => todo!(),
-            Stmt::Return { keyword, value } => todo!(),
+            } => {
+                self.resolve_expr(condition)?;
+                self.resolve_stmt(then_branch)?;
+                if let Some(else_branch) = else_branch {
+                    self.resolve_stmt(else_branch)?;
+                }
+            }
+            Stmt::Print(expr) => {
+                self.resolve_expr(expr)?;
+            }
+            Stmt::Return { value, .. } => {
+                if let Some(value) = value {
+                    self.resolve_expr(value)?;
+                }
+            }
             Stmt::Var { name, initializer } => {
                 self.declare(name);
                 if let Some(initializer) = initializer {
@@ -62,26 +74,27 @@ impl Resolver {
                 }
                 self.define(name);
             }
-            Stmt::While { condition, body } => todo!(),
+            Stmt::While { condition, body } => {
+                self.resolve_expr(condition)?;
+                self.resolve_stmt(body)?;
+            }
         }
         Ok(())
     }
 
     fn resolve_expr(&mut self, expr: &Expr) -> Result<(), LoxError> {
         match &expr.kind {
-            ExprKind::Literal(token_value) => todo!(),
-            ExprKind::Grouping(expr) => todo!(),
-            ExprKind::Logical {
-                left,
-                operator,
-                right,
-            } => todo!(),
-            ExprKind::Unary { operator, right } => todo!(),
-            ExprKind::Binary {
-                operator,
-                left,
-                right,
-            } => todo!(),
+            ExprKind::Literal(_) => {}
+            ExprKind::Grouping(expr) => {
+                self.resolve_expr(expr)?;
+            }
+            ExprKind::Logical { left, right, .. } | ExprKind::Binary { left, right, .. } => {
+                self.resolve_expr(left)?;
+                self.resolve_expr(right)?;
+            }
+            ExprKind::Unary { right, .. } => {
+                self.resolve_expr(right)?;
+            }
             ExprKind::Variable(name) => {
                 if let Some(scope) = self.scopes.last()
                     && let Some(is_defined) = scope.get(name)
@@ -98,10 +111,13 @@ impl Resolver {
                 self.resolve_local(expr, name);
             }
             ExprKind::Call {
-                callee,
-                paren,
-                arguments,
-            } => todo!(),
+                callee, arguments, ..
+            } => {
+                self.resolve_expr(callee)?;
+                for arg in arguments {
+                    self.resolve_expr(arg)?;
+                }
+            }
         }
         Ok(())
     }
