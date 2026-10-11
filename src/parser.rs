@@ -1,5 +1,5 @@
 use crate::{
-    expr::ExprKind,
+    expr::{Expr, ExprId, ExprKind},
     lox_error::LoxError,
     stmt::Stmt,
     token::{Token, TokenType, TokenValue},
@@ -18,6 +18,7 @@ static EOF_TOKEN: Token = Token {
 pub struct Parser {
     tokens: Vec<Token>,
     current: usize,
+    next_id: usize,
 }
 
 impl Parser {
@@ -28,14 +29,24 @@ impl Parser {
             "The tokens vector must end with an Eof token"
         );
 
-        Parser { tokens, current: 0 }
+        Parser {
+            tokens,
+            current: 0,
+            next_id: 0,
+        }
+    }
+
+    pub fn get_next_id(&mut self) -> ExprId {
+        let id = self.next_id;
+        self.next_id += 1;
+        ExprId(id)
     }
 
     pub fn parse(&mut self) -> Result<Vec<Stmt>, LoxError> {
         parse_program(self)
     }
 
-    pub fn parse_expression(&mut self) -> Result<ExprKind, LoxError> {
+    pub fn parse_expression(&mut self) -> Result<Expr, LoxError> {
         parse_expression(self)
     }
 
@@ -81,10 +92,10 @@ impl Parser {
         self.peek().token_type == *token_type
     }
 
-    fn consume(&mut self, token_type: &TokenType) -> Result<&Token, LoxError> {
+    fn consume(&mut self, token_type: &TokenType) -> Result<Token, LoxError> {
         if self.peek().token_type == *token_type {
             self.advance();
-            Ok(self.previous())
+            Ok(self.previous().clone())
         } else {
             Err(LoxError::SyntaxError(format!("{token_type:?} expected")))
         }
@@ -120,7 +131,7 @@ fn parse_declaration(parser: &mut Parser) -> Result<Stmt, LoxError> {
 // function       → IDENTIFIER "(" parameters? ")" block ;
 // parameters     → IDENTIFIER ( "," IDENTIFIER )* ;
 fn parse_function(parser: &mut Parser, kind: &str) -> Result<Stmt, LoxError> {
-    let Ok(name) = parser.consume(&TokenType::Identifier).cloned() else {
+    let Ok(name) = parser.consume(&TokenType::Identifier) else {
         return Err(LoxError::SyntaxError(format!("Expect {kind} name")));
     };
     let Ok(_) = parser.consume(&TokenType::LeftParen) else {
@@ -258,7 +269,10 @@ fn parse_for_statement(parser: &mut Parser) -> Result<Stmt, LoxError> {
 
     // Parse condition
     let condition = if parser.matches(&[TokenType::Semicolon]) {
-        ExprKind::Literal(TokenValue::Boolean(true))
+        Expr {
+            id: parser.get_next_id(),
+            kind: ExprKind::Literal(TokenValue::Boolean(true)),
+        }
     } else {
         parse_expression(parser)?
     };
@@ -365,7 +379,7 @@ fn parse_print_statement(parser: &mut Parser) -> Result<Stmt, LoxError> {
 }
 
 // expression     → assignment ;
-fn parse_expression(parser: &mut Parser) -> Result<ExprKind, LoxError> {
+fn parse_expression(parser: &mut Parser) -> Result<Expr, LoxError> {
     match parse_assignment(parser) {
         Ok(expression) => Ok(expression),
         Err(e) => {
@@ -377,7 +391,7 @@ fn parse_expression(parser: &mut Parser) -> Result<ExprKind, LoxError> {
 
 // assignment     → IDENTIFIER "=" assignment
 //                | logic_or ;
-fn parse_assignment(parser: &mut Parser) -> Result<ExprKind, LoxError> {
+fn parse_assignment(parser: &mut Parser) -> Result<Expr, LoxError> {
     let expr = parse_or(parser)?;
 
     if parser.matches(&[TokenType::Equal]) {
@@ -386,11 +400,14 @@ fn parse_assignment(parser: &mut Parser) -> Result<ExprKind, LoxError> {
         let equals_string = equals.to_string();
         let value = parse_assignment(parser)?;
 
-        match expr {
+        match &expr.kind {
             ExprKind::Variable(name) => {
-                return Ok(ExprKind::Assign {
-                    name: name.clone(),
-                    value: Box::new(value),
+                return Ok(Expr {
+                    id: parser.get_next_id(),
+                    kind: ExprKind::Assign {
+                        name: name.clone(),
+                        value: Box::new(value),
+                    },
                 });
             }
             _ => {
@@ -405,16 +422,19 @@ fn parse_assignment(parser: &mut Parser) -> Result<ExprKind, LoxError> {
 }
 
 // logic_or       → logic_and ( "or" logic_and )* ;
-fn parse_or(parser: &mut Parser) -> Result<ExprKind, LoxError> {
+fn parse_or(parser: &mut Parser) -> Result<Expr, LoxError> {
     let mut expr = parse_and(parser)?;
 
     while parser.matches(&[TokenType::Or]) {
         let operator = parser.previous().clone();
         let right = parse_and(parser)?;
-        expr = ExprKind::Logical {
-            left: Box::new(expr),
-            operator,
-            right: Box::new(right),
+        expr = Expr {
+            id: parser.get_next_id(),
+            kind: ExprKind::Logical {
+                left: Box::new(expr),
+                operator,
+                right: Box::new(right),
+            },
         };
     }
 
@@ -422,16 +442,19 @@ fn parse_or(parser: &mut Parser) -> Result<ExprKind, LoxError> {
 }
 
 // logic_and      → equality ( "and" equality )* ;
-fn parse_and(parser: &mut Parser) -> Result<ExprKind, LoxError> {
+fn parse_and(parser: &mut Parser) -> Result<Expr, LoxError> {
     let mut expr = parse_equality(parser)?;
 
     while parser.matches(&[TokenType::And]) {
         let operator = parser.previous().clone();
         let right = parse_equality(parser)?;
-        expr = ExprKind::Logical {
-            left: Box::new(expr),
-            operator,
-            right: Box::new(right),
+        expr = Expr {
+            id: parser.get_next_id(),
+            kind: ExprKind::Logical {
+                left: Box::new(expr),
+                operator,
+                right: Box::new(right),
+            },
         };
     }
 
@@ -439,16 +462,19 @@ fn parse_and(parser: &mut Parser) -> Result<ExprKind, LoxError> {
 }
 
 // equality       → comparison ( ( "!=" | "==" ) comparison )* ;
-fn parse_equality(parser: &mut Parser) -> Result<ExprKind, LoxError> {
+fn parse_equality(parser: &mut Parser) -> Result<Expr, LoxError> {
     let expr = parse_comparison(parser)?;
 
     if parser.matches(&[TokenType::BangEqual, TokenType::EqualEqual]) {
         let operator = parser.previous().clone();
         let right = parse_comparison(parser)?;
-        return Ok(ExprKind::Binary {
-            operator,
-            left: Box::new(expr),
-            right: Box::new(right),
+        return Ok(Expr {
+            id: parser.get_next_id(),
+            kind: ExprKind::Binary {
+                operator,
+                left: Box::new(expr),
+                right: Box::new(right),
+            },
         });
     }
 
@@ -456,7 +482,7 @@ fn parse_equality(parser: &mut Parser) -> Result<ExprKind, LoxError> {
 }
 
 // comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
-fn parse_comparison(parser: &mut Parser) -> Result<ExprKind, LoxError> {
+fn parse_comparison(parser: &mut Parser) -> Result<Expr, LoxError> {
     let mut expr = parse_term(parser)?;
 
     while parser.matches(&[
@@ -467,10 +493,13 @@ fn parse_comparison(parser: &mut Parser) -> Result<ExprKind, LoxError> {
     ]) {
         let operator = parser.previous().clone();
         let right = parse_term(parser)?;
-        expr = ExprKind::Binary {
-            operator,
-            left: Box::new(expr),
-            right: Box::new(right),
+        expr = Expr {
+            id: parser.get_next_id(),
+            kind: ExprKind::Binary {
+                operator,
+                left: Box::new(expr),
+                right: Box::new(right),
+            },
         };
     }
 
@@ -478,16 +507,19 @@ fn parse_comparison(parser: &mut Parser) -> Result<ExprKind, LoxError> {
 }
 
 // term           → factor ( ( "-" | "+" ) factor )* ;
-fn parse_term(parser: &mut Parser) -> Result<ExprKind, LoxError> {
+fn parse_term(parser: &mut Parser) -> Result<Expr, LoxError> {
     let mut expr = parse_factor(parser)?;
 
     while parser.matches(&[TokenType::Minus, TokenType::Plus]) {
         let operator = parser.previous().clone();
         let right = parse_factor(parser)?;
-        expr = ExprKind::Binary {
-            operator,
-            left: Box::new(expr),
-            right: Box::new(right),
+        expr = Expr {
+            id: parser.get_next_id(),
+            kind: ExprKind::Binary {
+                operator,
+                left: Box::new(expr),
+                right: Box::new(right),
+            },
         };
     }
 
@@ -495,16 +527,19 @@ fn parse_term(parser: &mut Parser) -> Result<ExprKind, LoxError> {
 }
 
 // factor         → unary ( ( "/" | "*" ) unary )* ;
-fn parse_factor(parser: &mut Parser) -> Result<ExprKind, LoxError> {
+fn parse_factor(parser: &mut Parser) -> Result<Expr, LoxError> {
     let mut expr = parse_unary(parser)?;
 
     while parser.matches(&[TokenType::Slash, TokenType::Star]) {
         let operator = parser.previous().clone();
         let right = parse_unary(parser)?;
-        expr = ExprKind::Binary {
-            operator,
-            left: Box::new(expr),
-            right: Box::new(right),
+        expr = Expr {
+            id: parser.get_next_id(),
+            kind: ExprKind::Binary {
+                operator,
+                left: Box::new(expr),
+                right: Box::new(right),
+            },
         };
     }
 
@@ -512,13 +547,16 @@ fn parse_factor(parser: &mut Parser) -> Result<ExprKind, LoxError> {
 }
 
 // unary          → ( "!" | "-" ) unary | call;
-fn parse_unary(parser: &mut Parser) -> Result<ExprKind, LoxError> {
+fn parse_unary(parser: &mut Parser) -> Result<Expr, LoxError> {
     if parser.matches(&[TokenType::Bang, TokenType::Minus]) {
         let operator = parser.previous().clone();
         let right = parse_unary(parser)?;
-        return Ok(ExprKind::Unary {
-            operator,
-            right: Box::new(right),
+        return Ok(Expr {
+            id: parser.get_next_id(),
+            kind: ExprKind::Unary {
+                operator,
+                right: Box::new(right),
+            },
         });
     }
 
@@ -526,7 +564,7 @@ fn parse_unary(parser: &mut Parser) -> Result<ExprKind, LoxError> {
 }
 
 // call           → primary ( "(" arguments? ")" )* ;
-fn parse_call(parser: &mut Parser) -> Result<ExprKind, LoxError> {
+fn parse_call(parser: &mut Parser) -> Result<Expr, LoxError> {
     let mut expr = parse_primary(parser)?;
 
     loop {
@@ -540,7 +578,7 @@ fn parse_call(parser: &mut Parser) -> Result<ExprKind, LoxError> {
 }
 
 // Helper to finish the call parsing
-fn finish_call(parser: &mut Parser, callee: ExprKind) -> Result<ExprKind, LoxError> {
+fn finish_call(parser: &mut Parser, callee: Expr) -> Result<Expr, LoxError> {
     let mut arguments = vec![];
     if !parser.check(&TokenType::RightParen) {
         loop {
@@ -560,23 +598,29 @@ fn finish_call(parser: &mut Parser, callee: ExprKind) -> Result<ExprKind, LoxErr
         ));
     };
 
-    Ok(ExprKind::Call {
-        callee: Box::new(callee),
-        paren: paren.clone(),
-        arguments,
+    Ok(Expr {
+        id: parser.get_next_id(),
+        kind: ExprKind::Call {
+            callee: Box::new(callee),
+            paren: paren.clone(),
+            arguments,
+        },
     })
 }
 
 // primary        → NUMBER | STRING | "true" | "false" | "nil"
 //                | "(" expression ")" ;
-fn parse_primary(parser: &mut Parser) -> Result<ExprKind, LoxError> {
+fn parse_primary(parser: &mut Parser) -> Result<Expr, LoxError> {
     if parser.matches(&[TokenType::Number]) {
         let n = parser
             .previous()
             .literal
             .clone()
             .expect("Number token without literal must not exist");
-        return Ok(ExprKind::Literal(n));
+        return Ok(Expr {
+            id: parser.get_next_id(),
+            kind: ExprKind::Literal(n),
+        });
     }
 
     if parser.matches(&[TokenType::String]) {
@@ -585,25 +629,40 @@ fn parse_primary(parser: &mut Parser) -> Result<ExprKind, LoxError> {
             .literal
             .clone()
             .expect("String token without literal must not exist");
-        return Ok(ExprKind::Literal(s));
+        return Ok(Expr {
+            id: parser.get_next_id(),
+            kind: ExprKind::Literal(s),
+        });
     }
 
     if parser.matches(&[TokenType::Nil]) {
-        return Ok(ExprKind::Literal(TokenValue::Nil));
+        return Ok(Expr {
+            id: parser.get_next_id(),
+            kind: ExprKind::Literal(TokenValue::Nil),
+        });
     }
 
     if parser.matches(&[TokenType::True]) {
-        return Ok(ExprKind::Literal(TokenValue::Boolean(true)));
+        return Ok(Expr {
+            id: parser.get_next_id(),
+            kind: ExprKind::Literal(TokenValue::Boolean(true)),
+        });
     }
 
     if parser.matches(&[TokenType::False]) {
-        return Ok(ExprKind::Literal(TokenValue::Boolean(false)));
+        return Ok(Expr {
+            id: parser.get_next_id(),
+            kind: ExprKind::Literal(TokenValue::Boolean(false)),
+        });
     }
 
     if parser.matches(&[TokenType::LeftParen]) {
         let expr = parse_expression(parser)?;
         if parser.consume(&TokenType::RightParen).is_ok() {
-            return Ok(ExprKind::Grouping(Box::new(expr)));
+            return Ok(Expr {
+                id: parser.get_next_id(),
+                kind: ExprKind::Grouping(Box::new(expr)),
+            });
         }
         eprintln!("[line 1] Missing closing parenthesis.");
         return Err(LoxError::SyntaxError(
@@ -612,7 +671,10 @@ fn parse_primary(parser: &mut Parser) -> Result<ExprKind, LoxError> {
     }
 
     if parser.matches(&[TokenType::Identifier]) {
-        return Ok(ExprKind::Variable(parser.previous().lexeme.clone()));
+        return Ok(Expr {
+            id: parser.get_next_id(),
+            kind: ExprKind::Variable(parser.previous().lexeme.clone()),
+        });
     }
 
     Err(LoxError::SyntaxError(
@@ -648,9 +710,15 @@ mod tests {
 
         assert_eq!(
             assignment,
-            ExprKind::Assign {
-                name: var_a.lexeme,
-                value: Box::new(ExprKind::Literal(TokenValue::Number(42.0)))
+            Expr {
+                id: ExprId(2),
+                kind: ExprKind::Assign {
+                    name: var_a.lexeme,
+                    value: Box::new(Expr {
+                        id: ExprId(1),
+                        kind: ExprKind::Literal(TokenValue::Number(42.0))
+                    })
+                }
             }
         );
     }

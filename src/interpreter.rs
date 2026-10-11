@@ -2,7 +2,7 @@ use itertools::Itertools;
 
 use crate::{
     environment::{EnvRef, Environment},
-    expr::ExprKind,
+    expr::{Expr, ExprKind},
     lox_error::LoxError,
     lox_function::{CLOCK, Function},
     lox_value::LoxValue,
@@ -209,8 +209,8 @@ impl Interpreter {
     }
 
     #[allow(clippy::too_many_lines)]
-    pub fn evaluate(&mut self, expr: &ExprKind) -> Result<LoxValue, LoxError> {
-        match expr {
+    pub fn evaluate(&mut self, expr: &Expr) -> Result<LoxValue, LoxError> {
+        match &expr.kind {
             ExprKind::Literal(token_value) => match token_value {
                 TokenValue::String(s) => Ok(LoxValue::String(s.clone())),
                 TokenValue::Number(n) => Ok(LoxValue::Number(*n)),
@@ -276,7 +276,10 @@ impl Interpreter {
                     .expect("Interpreter must have an env")
                     .borrow_mut()
                     .assign(name.clone(), Some(evaluated_value))?;
-                self.evaluate(&ExprKind::Variable(name.clone()))
+                self.evaluate(&Expr {
+                    id: value.id,
+                    kind: ExprKind::Variable(name.clone()),
+                })
             }
             ExprKind::Logical {
                 left,
@@ -342,13 +345,16 @@ fn compare_if_numbers(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::token::Token;
+    use crate::{expr::ExprId, token::Token};
 
     // Evaluation
     #[test]
     fn test_eval_literal() {
         let mut interpreter = Interpreter::new();
-        let expr = ExprKind::Literal(TokenValue::Boolean(true));
+        let expr = Expr {
+            id: ExprId(0),
+            kind: ExprKind::Literal(TokenValue::Boolean(true)),
+        };
         assert_eq!(
             interpreter.evaluate(&expr).unwrap(),
             LoxValue::Boolean(true)
@@ -357,16 +363,25 @@ mod tests {
 
     #[test]
     fn test_minus_number() {
-        let left = Box::new(ExprKind::Literal(TokenValue::Number(44.0)));
-        let right = Box::new(ExprKind::Literal(TokenValue::Number(2.0)));
-        let sub = ExprKind::Binary {
-            operator: Token {
-                token_type: TokenType::Minus,
-                lexeme: "-".to_string(),
-                literal: None,
+        let left = Box::new(Expr {
+            id: ExprId(0),
+            kind: ExprKind::Literal(TokenValue::Number(44.0)),
+        });
+        let right = Box::new(Expr {
+            id: ExprId(1),
+            kind: ExprKind::Literal(TokenValue::Number(2.0)),
+        });
+        let sub = Expr {
+            id: ExprId(2),
+            kind: ExprKind::Binary {
+                operator: Token {
+                    token_type: TokenType::Minus,
+                    lexeme: "-".to_string(),
+                    literal: None,
+                },
+                left,
+                right,
             },
-            left,
-            right,
         };
         let mut interpreter = Interpreter::new();
         assert_eq!(interpreter.evaluate(&sub).unwrap(), LoxValue::Number(42.0));
@@ -374,16 +389,25 @@ mod tests {
 
     #[test]
     fn test_star_number() {
-        let left = Box::new(ExprKind::Literal(TokenValue::Number(4.0)));
-        let right = Box::new(ExprKind::Literal(TokenValue::Number(2.0)));
-        let sub = ExprKind::Binary {
-            operator: Token {
-                token_type: TokenType::Star,
-                lexeme: "*".to_string(),
-                literal: None,
+        let left = Box::new(Expr {
+            id: ExprId(0),
+            kind: ExprKind::Literal(TokenValue::Number(4.0)),
+        });
+        let right = Box::new(Expr {
+            id: ExprId(1),
+            kind: ExprKind::Literal(TokenValue::Number(2.0)),
+        });
+        let sub = Expr {
+            id: ExprId(2),
+            kind: ExprKind::Binary {
+                operator: Token {
+                    token_type: TokenType::Star,
+                    lexeme: "*".to_string(),
+                    literal: None,
+                },
+                left,
+                right,
             },
-            left,
-            right,
         };
 
         let mut interpreter = Interpreter::new();
@@ -392,16 +416,25 @@ mod tests {
 
     #[test]
     fn test_slash_number() {
-        let left = Box::new(ExprKind::Literal(TokenValue::Number(4.0)));
-        let right = Box::new(ExprKind::Literal(TokenValue::Number(2.0)));
-        let sub = ExprKind::Binary {
-            operator: Token {
-                token_type: TokenType::Slash,
-                lexeme: "/".to_string(),
-                literal: None,
+        let left = Box::new(Expr {
+            id: ExprId(0),
+            kind: ExprKind::Literal(TokenValue::Number(4.0)),
+        });
+        let right = Box::new(Expr {
+            id: ExprId(1),
+            kind: ExprKind::Literal(TokenValue::Number(2.0)),
+        });
+        let sub = Expr {
+            id: ExprId(2),
+            kind: ExprKind::Binary {
+                operator: Token {
+                    token_type: TokenType::Slash,
+                    lexeme: "/".to_string(),
+                    literal: None,
+                },
+                left,
+                right,
             },
-            left,
-            right,
         };
 
         let mut interpreter = Interpreter::new();
@@ -410,16 +443,25 @@ mod tests {
 
     #[test]
     fn test_add_number() {
-        let left = Box::new(ExprKind::Literal(TokenValue::Number(40.0)));
-        let right = Box::new(ExprKind::Literal(TokenValue::Number(2.0)));
-        let sub = ExprKind::Binary {
-            operator: Token {
-                token_type: TokenType::Plus,
-                lexeme: "+".to_string(),
-                literal: None,
+        let left = Box::new(Expr {
+            id: ExprId(0),
+            kind: ExprKind::Literal(TokenValue::Number(40.0)),
+        });
+        let right = Box::new(Expr {
+            id: ExprId(1),
+            kind: ExprKind::Literal(TokenValue::Number(2.0)),
+        });
+        let sub = Expr {
+            id: ExprId(2),
+            kind: ExprKind::Binary {
+                operator: Token {
+                    token_type: TokenType::Plus,
+                    lexeme: "+".to_string(),
+                    literal: None,
+                },
+                left,
+                right,
             },
-            left,
-            right,
         };
 
         let mut interpreter = Interpreter::new();
@@ -428,16 +470,25 @@ mod tests {
 
     #[test]
     fn test_add_string() {
-        let left = Box::new(ExprKind::Literal(TokenValue::String("4".into())));
-        let right = Box::new(ExprKind::Literal(TokenValue::String("2".into())));
-        let sub = ExprKind::Binary {
-            operator: Token {
-                token_type: TokenType::Plus,
-                lexeme: "+".to_string(),
-                literal: None,
+        let left = Box::new(Expr {
+            id: ExprId(0),
+            kind: ExprKind::Literal(TokenValue::String("4".into())),
+        });
+        let right = Box::new(Expr {
+            id: ExprId(0),
+            kind: ExprKind::Literal(TokenValue::String("2".into())),
+        });
+        let sub = Expr {
+            id: ExprId(0),
+            kind: ExprKind::Binary {
+                operator: Token {
+                    token_type: TokenType::Plus,
+                    lexeme: "+".to_string(),
+                    literal: None,
+                },
+                left,
+                right,
             },
-            left,
-            right,
         };
 
         let mut interpreter = Interpreter::new();
@@ -449,16 +500,25 @@ mod tests {
 
     #[test]
     fn test_greater() {
-        let left = Box::new(ExprKind::Literal(TokenValue::Number(4.0)));
-        let right = Box::new(ExprKind::Literal(TokenValue::Number(2.0)));
-        let sub = ExprKind::Binary {
-            operator: Token {
-                token_type: TokenType::Greater,
-                lexeme: ">".to_string(),
-                literal: None,
+        let left = Box::new(Expr {
+            id: ExprId(0),
+            kind: ExprKind::Literal(TokenValue::Number(4.0)),
+        });
+        let right = Box::new(Expr {
+            id: ExprId(0),
+            kind: ExprKind::Literal(TokenValue::Number(2.0)),
+        });
+        let sub = Expr {
+            id: ExprId(0),
+            kind: ExprKind::Binary {
+                operator: Token {
+                    token_type: TokenType::Greater,
+                    lexeme: ">".to_string(),
+                    literal: None,
+                },
+                left,
+                right,
             },
-            left,
-            right,
         };
 
         let mut interpreter = Interpreter::new();
@@ -467,16 +527,25 @@ mod tests {
 
     #[test]
     fn test_equal_equal() {
-        let left = Box::new(ExprKind::Literal(TokenValue::Number(4.0)));
-        let right = Box::new(ExprKind::Literal(TokenValue::Number(2.0)));
-        let sub = ExprKind::Binary {
-            operator: Token {
-                token_type: TokenType::EqualEqual,
-                lexeme: "==".to_string(),
-                literal: None,
+        let left = Box::new(Expr {
+            id: ExprId(0),
+            kind: ExprKind::Literal(TokenValue::Number(4.0)),
+        });
+        let right = Box::new(Expr {
+            id: ExprId(0),
+            kind: ExprKind::Literal(TokenValue::Number(2.0)),
+        });
+        let sub = Expr {
+            id: ExprId(0),
+            kind: ExprKind::Binary {
+                operator: Token {
+                    token_type: TokenType::EqualEqual,
+                    lexeme: "==".to_string(),
+                    literal: None,
+                },
+                left,
+                right,
             },
-            left,
-            right,
         };
 
         let mut interpreter = Interpreter::new();

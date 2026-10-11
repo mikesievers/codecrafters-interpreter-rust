@@ -4,36 +4,49 @@ use itertools::Itertools;
 
 use crate::token::{Token, TokenValue};
 
-pub struct ExprId(usize);
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ExprId(pub usize);
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Expr {
+    pub id: ExprId,
+    pub kind: ExprKind,
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ExprKind {
     Literal(TokenValue),
-    Grouping(Box<ExprKind>),
+    Grouping(Box<Expr>),
     Logical {
-        left: Box<ExprKind>,
+        left: Box<Expr>,
         operator: Token,
-        right: Box<ExprKind>,
+        right: Box<Expr>,
     },
     Unary {
         operator: Token,
-        right: Box<ExprKind>,
+        right: Box<Expr>,
     },
     Binary {
         operator: Token,
-        left: Box<ExprKind>,
-        right: Box<ExprKind>,
+        left: Box<Expr>,
+        right: Box<Expr>,
     },
     Variable(String),
     Assign {
         name: String,
-        value: Box<ExprKind>,
+        value: Box<Expr>,
     },
     Call {
-        callee: Box<ExprKind>,
+        callee: Box<Expr>,
         paren: Token,
-        arguments: Vec<ExprKind>,
+        arguments: Vec<Expr>,
     },
+}
+
+impl Display for Expr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.kind)
+    }
 }
 
 impl Display for ExprKind {
@@ -90,10 +103,16 @@ mod tests {
             lexeme: "!".to_string(),
             literal: None,
         };
-        let right = ExprKind::Literal(TokenValue::Boolean(true));
-        let expr = ExprKind::Unary {
-            operator,
-            right: Box::new(right),
+        let right = Expr {
+            id: ExprId(0),
+            kind: ExprKind::Literal(TokenValue::Boolean(true)),
+        };
+        let expr = Expr {
+            id: ExprId(1),
+            kind: ExprKind::Unary {
+                operator,
+                right: Box::new(right),
+            },
         };
         assert_eq!(expr.to_string(), "(! true)");
     }
