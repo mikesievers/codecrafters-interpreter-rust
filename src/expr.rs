@@ -4,6 +4,8 @@ use itertools::Itertools;
 
 use crate::token::{Token, TokenValue};
 
+pub struct ExprId(usize);
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum Expr {
     Literal(TokenValue),
