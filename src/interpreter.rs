@@ -275,11 +275,10 @@ impl Interpreter {
                     .as_mut()
                     .expect("Interpreter must have an env")
                     .borrow_mut()
-                    .assign(name.clone(), Some(evaluated_value))?;
-                self.evaluate(&Expr {
-                    id: value.id,
-                    kind: ExprKind::Variable(name.clone()),
-                })
+                    .assign(name.clone(), Some(evaluated_value.clone()))?;
+                // NOTE: This was previously an evaluation of the variable, and has been
+                // changed to just return the previous evaluated value.
+                Ok(evaluated_value)
             }
             ExprKind::Logical {
                 left,
