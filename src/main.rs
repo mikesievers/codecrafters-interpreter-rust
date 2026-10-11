@@ -6,6 +6,7 @@ mod lox_error;
 mod lox_function;
 mod lox_value;
 mod parser;
+mod resolver;
 mod scanner;
 mod stmt;
 mod token;
@@ -18,6 +19,7 @@ pub use scanner::Scanner;
 
 use crate::interpreter::Interpreter;
 use crate::lox_error::LoxError;
+use crate::resolver::Resolver;
 
 const EXIT_CODE_SYNTAX_ERROR: u8 = 65;
 const EXIT_CODE_RUNTIME_ERROR: u8 = 70;
