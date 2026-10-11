@@ -1,0 +1,15 @@
+fun hanoi(n, start, end) {
+  if (n <= 1) { 
+    print start  + " -> " + end;
+    return;
+  }
+
+  var self = start;
+  var other = 6 - ( start + end );
+
+  hanoi(n-1, self, other);
+  print self + " -> " + end;
+  hanoi(n-1, other, end);
+}
+
+hanoi(3,1,3);
