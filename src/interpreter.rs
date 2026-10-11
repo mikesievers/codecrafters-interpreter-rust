@@ -1,8 +1,10 @@
+use std::collections::HashMap;
+
 use itertools::Itertools;
 
 use crate::{
     environment::{EnvRef, Environment},
-    expr::{Expr, ExprKind},
+    expr::{Expr, ExprId, ExprKind},
     lox_error::LoxError,
     lox_function::{CLOCK, Function},
     lox_value::LoxValue,
@@ -12,6 +14,7 @@ use crate::{
 
 pub struct Interpreter {
     env: Option<EnvRef>,
+    locals: HashMap<ExprId, usize>,
 }
 
 // Create a Signal to return from evaluation/execution, to allow
@@ -25,7 +28,7 @@ pub enum Signal {
 }
 
 impl Interpreter {
-    pub fn new() -> Self {
+    pub fn new(locals: HashMap<ExprId, usize>) -> Self {
         // Create global environment with builtin functions
         let globals = Environment::new_global();
         globals
@@ -34,7 +37,10 @@ impl Interpreter {
 
         let env = globals.clone();
 
-        Interpreter { env: Some(env) }
+        Interpreter {
+            env: Some(env),
+            locals,
+        }
     }
 
     pub fn interpret(&mut self, program: &[Stmt]) -> Result<(), LoxError> {
@@ -349,7 +355,7 @@ mod tests {
     // Evaluation
     #[test]
     fn test_eval_literal() {
-        let mut interpreter = Interpreter::new();
+        let mut interpreter = Interpreter::new(HashMap::new());
         let expr = Expr {
             id: ExprId(0),
             kind: ExprKind::Literal(TokenValue::Boolean(true)),
@@ -382,7 +388,7 @@ mod tests {
                 right,
             },
         };
-        let mut interpreter = Interpreter::new();
+        let mut interpreter = Interpreter::new(HashMap::new());
         assert_eq!(interpreter.evaluate(&sub).unwrap(), LoxValue::Number(42.0));
     }
 
@@ -409,7 +415,7 @@ mod tests {
             },
         };
 
-        let mut interpreter = Interpreter::new();
+        let mut interpreter = Interpreter::new(HashMap::new());
         assert_eq!(interpreter.evaluate(&sub).unwrap(), LoxValue::Number(8.0));
     }
 
@@ -436,7 +442,7 @@ mod tests {
             },
         };
 
-        let mut interpreter = Interpreter::new();
+        let mut interpreter = Interpreter::new(HashMap::new());
         assert_eq!(interpreter.evaluate(&sub).unwrap(), LoxValue::Number(2.0));
     }
 
@@ -463,7 +469,7 @@ mod tests {
             },
         };
 
-        let mut interpreter = Interpreter::new();
+        let mut interpreter = Interpreter::new(HashMap::new());
         assert_eq!(interpreter.evaluate(&sub).unwrap(), LoxValue::Number(42.0));
     }
 
@@ -490,7 +496,7 @@ mod tests {
             },
         };
 
-        let mut interpreter = Interpreter::new();
+        let mut interpreter = Interpreter::new(HashMap::new());
         assert_eq!(
             interpreter.evaluate(&sub).unwrap(),
             LoxValue::String("42".to_string())
@@ -520,7 +526,7 @@ mod tests {
             },
         };
 
-        let mut interpreter = Interpreter::new();
+        let mut interpreter = Interpreter::new(HashMap::new());
         assert_eq!(interpreter.evaluate(&sub).unwrap(), LoxValue::Boolean(true));
     }
 
@@ -547,7 +553,7 @@ mod tests {
             },
         };
 
-        let mut interpreter = Interpreter::new();
+        let mut interpreter = Interpreter::new(HashMap::new());
         assert_eq!(
             interpreter.evaluate(&sub).unwrap(),
             LoxValue::Boolean(false)

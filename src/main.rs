@@ -11,6 +11,7 @@ mod scanner;
 mod stmt;
 mod token;
 
+use std::collections::HashMap;
 use std::env;
 use std::process::ExitCode;
 
@@ -77,7 +78,7 @@ fn main() -> ExitCode {
             let mut parser = Parser::new(tokens);
             let expr = parser.parse_expression().expect("Parsing failed.");
 
-            let mut interpreter = Interpreter::new();
+            let mut interpreter = Interpreter::new(HashMap::new());
 
             match interpreter.evaluate(&expr) {
                 Ok(output) => println!("{output}"),
@@ -116,7 +117,9 @@ fn main() -> ExitCode {
                 return ExitCode::from(EXIT_CODE_SYNTAX_ERROR);
             };
 
-            let mut interpreter = Interpreter::new();
+            let mut interpreter = Interpreter::new(locals);
+
+            todo!("Change interpreter to use locals");
 
             match interpreter.interpret(&program) {
                 Ok(()) => (),
