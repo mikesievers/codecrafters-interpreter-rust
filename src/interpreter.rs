@@ -2,7 +2,7 @@ use itertools::Itertools;
 
 use crate::{
     environment::{EnvRef, Environment},
-    expr::Expr,
+    expr::ExprKind,
     lox_error::LoxError,
     lox_function::{CLOCK, Function},
     lox_value::LoxValue,
@@ -209,23 +209,23 @@ impl Interpreter {
     }
 
     #[allow(clippy::too_many_lines)]
-    pub fn evaluate(&mut self, expr: &Expr) -> Result<LoxValue, LoxError> {
+    pub fn evaluate(&mut self, expr: &ExprKind) -> Result<LoxValue, LoxError> {
         match expr {
-            Expr::Literal(token_value) => match token_value {
+            ExprKind::Literal(token_value) => match token_value {
                 TokenValue::String(s) => Ok(LoxValue::String(s.clone())),
                 TokenValue::Number(n) => Ok(LoxValue::Number(*n)),
                 TokenValue::Boolean(b) => Ok(LoxValue::Boolean(*b)),
                 TokenValue::Nil => Ok(LoxValue::Nil),
             },
-            Expr::Grouping(grp) => self.evaluate(grp),
-            Expr::Unary { operator, right } => match operator.token_type {
+            ExprKind::Grouping(grp) => self.evaluate(grp),
+            ExprKind::Unary { operator, right } => match operator.token_type {
                 TokenType::Minus => Ok((-self.evaluate(right)?)?),
                 TokenType::Bang => Ok(!self.evaluate(right)?),
                 _ => Err(LoxError::SyntaxError(
                     "Unexpected Unary Operator found".to_string(),
                 )),
             },
-            Expr::Binary {
+            ExprKind::Binary {
                 operator,
                 left,
                 right,
@@ -257,7 +257,7 @@ impl Interpreter {
                     "Unexpected Binary operator encountered".to_string(),
                 )),
             },
-            Expr::Variable(name) => {
+            ExprKind::Variable(name) => {
                 match self
                     .env
                     .as_ref()
@@ -269,16 +269,16 @@ impl Interpreter {
                     None => Ok(LoxValue::Nil),
                 }
             }
-            Expr::Assign { name, value } => {
+            ExprKind::Assign { name, value } => {
                 let evaluated_value = self.evaluate(value)?;
                 self.env
                     .as_mut()
                     .expect("Interpreter must have an env")
                     .borrow_mut()
                     .assign(name.clone(), Some(evaluated_value))?;
-                self.evaluate(&Expr::Variable(name.clone()))
+                self.evaluate(&ExprKind::Variable(name.clone()))
             }
-            Expr::Logical {
+            ExprKind::Logical {
                 left,
                 operator,
                 right,
@@ -293,7 +293,7 @@ impl Interpreter {
                 }
                 self.evaluate(right)
             }
-            Expr::Call {
+            ExprKind::Call {
                 callee,
                 paren,
                 arguments,
@@ -348,7 +348,7 @@ mod tests {
     #[test]
     fn test_eval_literal() {
         let mut interpreter = Interpreter::new();
-        let expr = Expr::Literal(TokenValue::Boolean(true));
+        let expr = ExprKind::Literal(TokenValue::Boolean(true));
         assert_eq!(
             interpreter.evaluate(&expr).unwrap(),
             LoxValue::Boolean(true)
@@ -357,9 +357,9 @@ mod tests {
 
     #[test]
     fn test_minus_number() {
-        let left = Box::new(Expr::Literal(TokenValue::Number(44.0)));
-        let right = Box::new(Expr::Literal(TokenValue::Number(2.0)));
-        let sub = Expr::Binary {
+        let left = Box::new(ExprKind::Literal(TokenValue::Number(44.0)));
+        let right = Box::new(ExprKind::Literal(TokenValue::Number(2.0)));
+        let sub = ExprKind::Binary {
             operator: Token {
                 token_type: TokenType::Minus,
                 lexeme: "-".to_string(),
@@ -374,9 +374,9 @@ mod tests {
 
     #[test]
     fn test_star_number() {
-        let left = Box::new(Expr::Literal(TokenValue::Number(4.0)));
-        let right = Box::new(Expr::Literal(TokenValue::Number(2.0)));
-        let sub = Expr::Binary {
+        let left = Box::new(ExprKind::Literal(TokenValue::Number(4.0)));
+        let right = Box::new(ExprKind::Literal(TokenValue::Number(2.0)));
+        let sub = ExprKind::Binary {
             operator: Token {
                 token_type: TokenType::Star,
                 lexeme: "*".to_string(),
@@ -392,9 +392,9 @@ mod tests {
 
     #[test]
     fn test_slash_number() {
-        let left = Box::new(Expr::Literal(TokenValue::Number(4.0)));
-        let right = Box::new(Expr::Literal(TokenValue::Number(2.0)));
-        let sub = Expr::Binary {
+        let left = Box::new(ExprKind::Literal(TokenValue::Number(4.0)));
+        let right = Box::new(ExprKind::Literal(TokenValue::Number(2.0)));
+        let sub = ExprKind::Binary {
             operator: Token {
                 token_type: TokenType::Slash,
                 lexeme: "/".to_string(),
@@ -410,9 +410,9 @@ mod tests {
 
     #[test]
     fn test_add_number() {
-        let left = Box::new(Expr::Literal(TokenValue::Number(40.0)));
-        let right = Box::new(Expr::Literal(TokenValue::Number(2.0)));
-        let sub = Expr::Binary {
+        let left = Box::new(ExprKind::Literal(TokenValue::Number(40.0)));
+        let right = Box::new(ExprKind::Literal(TokenValue::Number(2.0)));
+        let sub = ExprKind::Binary {
             operator: Token {
                 token_type: TokenType::Plus,
                 lexeme: "+".to_string(),
@@ -428,9 +428,9 @@ mod tests {
 
     #[test]
     fn test_add_string() {
-        let left = Box::new(Expr::Literal(TokenValue::String("4".into())));
-        let right = Box::new(Expr::Literal(TokenValue::String("2".into())));
-        let sub = Expr::Binary {
+        let left = Box::new(ExprKind::Literal(TokenValue::String("4".into())));
+        let right = Box::new(ExprKind::Literal(TokenValue::String("2".into())));
+        let sub = ExprKind::Binary {
             operator: Token {
                 token_type: TokenType::Plus,
                 lexeme: "+".to_string(),
@@ -449,9 +449,9 @@ mod tests {
 
     #[test]
     fn test_greater() {
-        let left = Box::new(Expr::Literal(TokenValue::Number(4.0)));
-        let right = Box::new(Expr::Literal(TokenValue::Number(2.0)));
-        let sub = Expr::Binary {
+        let left = Box::new(ExprKind::Literal(TokenValue::Number(4.0)));
+        let right = Box::new(ExprKind::Literal(TokenValue::Number(2.0)));
+        let sub = ExprKind::Binary {
             operator: Token {
                 token_type: TokenType::Greater,
                 lexeme: ">".to_string(),
@@ -467,9 +467,9 @@ mod tests {
 
     #[test]
     fn test_equal_equal() {
-        let left = Box::new(Expr::Literal(TokenValue::Number(4.0)));
-        let right = Box::new(Expr::Literal(TokenValue::Number(2.0)));
-        let sub = Expr::Binary {
+        let left = Box::new(ExprKind::Literal(TokenValue::Number(4.0)));
+        let right = Box::new(ExprKind::Literal(TokenValue::Number(2.0)));
+        let sub = ExprKind::Binary {
             operator: Token {
                 token_type: TokenType::EqualEqual,
                 lexeme: "==".to_string(),

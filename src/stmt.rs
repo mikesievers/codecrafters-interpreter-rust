@@ -2,33 +2,33 @@ use std::fmt::Display;
 
 use itertools::Itertools;
 
-use crate::{expr::Expr, token::Token};
+use crate::{expr::ExprKind, token::Token};
 
 #[derive(Clone, Debug)]
 pub enum Stmt {
     Block(Vec<Stmt>),
-    Expression(Expr),
+    Expression(ExprKind),
     Function {
         name: Token,
         params: Vec<Token>,
         body: Box<Stmt>,
     },
     If {
-        condition: Expr,
+        condition: ExprKind,
         then_branch: Box<Stmt>,
         else_branch: Option<Box<Stmt>>,
     },
-    Print(Expr),
+    Print(ExprKind),
     Return {
         keyword: Token,
-        value: Option<Expr>,
+        value: Option<ExprKind>,
     },
     Var {
         name: String,
-        initializer: Option<Expr>,
+        initializer: Option<ExprKind>,
     },
     While {
-        condition: Expr,
+        condition: ExprKind,
         body: Box<Stmt>,
     },
 }

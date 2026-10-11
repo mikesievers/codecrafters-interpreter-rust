@@ -7,54 +7,54 @@ use crate::token::{Token, TokenValue};
 pub struct ExprId(usize);
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum Expr {
+pub enum ExprKind {
     Literal(TokenValue),
-    Grouping(Box<Expr>),
+    Grouping(Box<ExprKind>),
     Logical {
-        left: Box<Expr>,
+        left: Box<ExprKind>,
         operator: Token,
-        right: Box<Expr>,
+        right: Box<ExprKind>,
     },
     Unary {
         operator: Token,
-        right: Box<Expr>,
+        right: Box<ExprKind>,
     },
     Binary {
         operator: Token,
-        left: Box<Expr>,
-        right: Box<Expr>,
+        left: Box<ExprKind>,
+        right: Box<ExprKind>,
     },
     Variable(String),
     Assign {
         name: String,
-        value: Box<Expr>,
+        value: Box<ExprKind>,
     },
     Call {
-        callee: Box<Expr>,
+        callee: Box<ExprKind>,
         paren: Token,
-        arguments: Vec<Expr>,
+        arguments: Vec<ExprKind>,
     },
 }
 
-impl Display for Expr {
+impl Display for ExprKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let output = match self {
-            Expr::Literal(token_value) => token_value.to_string(),
-            Expr::Grouping(expr) => format!("(group {expr})"),
-            Expr::Unary { operator, right } => format!("({} {right})", operator.lexeme),
-            Expr::Binary {
+            ExprKind::Literal(token_value) => token_value.to_string(),
+            ExprKind::Grouping(expr) => format!("(group {expr})"),
+            ExprKind::Unary { operator, right } => format!("({} {right})", operator.lexeme),
+            ExprKind::Binary {
                 operator,
                 left,
                 right,
             } => format!("({} {left} {right})", operator.lexeme),
-            Expr::Variable(name) => name.to_string(),
-            Expr::Assign { name, value } => format!("({name}={value}"),
-            Expr::Logical {
+            ExprKind::Variable(name) => name.to_string(),
+            ExprKind::Assign { name, value } => format!("({name}={value}"),
+            ExprKind::Logical {
                 left,
                 operator,
                 right,
             } => format!("{left} {operator} {right}"),
-            Expr::Call {
+            ExprKind::Call {
                 callee,
                 paren,
                 arguments,
@@ -79,7 +79,7 @@ mod tests {
     #[test]
     fn test_display_bool() {
         let value = TokenValue::Boolean(true);
-        let expr = Expr::Literal(value);
+        let expr = ExprKind::Literal(value);
         assert_eq!(expr.to_string(), "true");
     }
 
@@ -90,8 +90,8 @@ mod tests {
             lexeme: "!".to_string(),
             literal: None,
         };
-        let right = Expr::Literal(TokenValue::Boolean(true));
-        let expr = Expr::Unary {
+        let right = ExprKind::Literal(TokenValue::Boolean(true));
+        let expr = ExprKind::Unary {
             operator,
             right: Box::new(right),
         };
