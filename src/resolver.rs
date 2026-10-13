@@ -20,9 +20,12 @@ impl Resolver {
     }
 
     pub fn resolve(&mut self, program: &Vec<Stmt>) -> Result<HashMap<ExprId, usize>, LoxError> {
+        // The global environment is also a global scope
+        self.begin_scope();
         for stmt in program {
             self.resolve_stmt(stmt)?;
         }
+        self.end_scope();
 
         Ok(self.locals.clone())
     }
@@ -46,7 +49,18 @@ impl Resolver {
                     self.declare(&param.lexeme);
                     self.define(&param.lexeme);
                 }
-                self.resolve_stmt(body)?;
+                // resolve the body
+                // Ensure that no new scope is started
+                // self.resolve_stmt(body)?;
+                match &**body {
+                    Stmt::Block(stmts) => {
+                        for stmt in stmts {
+                            self.resolve_stmt(stmt)?;
+                        }
+                    }
+                    _ => self.resolve_stmt(body)?,
+                }
+                self.end_scope();
             }
             Stmt::If {
                 condition,
@@ -148,6 +162,7 @@ impl Resolver {
         for (distance, scope) in self.scopes.iter().rev().enumerate() {
             if scope.contains_key(name) {
                 self.locals.insert(expr.id, distance);
+                return;
             }
         }
     }
