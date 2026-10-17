@@ -170,9 +170,23 @@ impl Resolver {
 
 #[cfg(test)]
 mod test {
+    use crate::{Scanner, parser::Parser};
+
     use super::*;
 
+    #[test]
     pub fn test_resolver() {
+        let scanner = Scanner::from_file(&"testdata/test_resolve_1.lox".to_string()).unwrap();
+
+        let (tokens, _) = scanner.tokenize();
+
+        let mut parser = Parser::new(tokens);
+        let program = parser.parse().unwrap();
+
         let mut resolver = Resolver::new();
+        // TODO: use the resulting locals map
+        let locals = resolver.resolve(&program).unwrap();
+
+        assert_eq!("todo","Test the resolver result");
     }
 }
