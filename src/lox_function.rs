@@ -20,7 +20,7 @@ pub enum Function {
     },
     UserFunction {
         name: String,
-        closure: EnvRef,
+        closure: Option<EnvRef>,
         params: Vec<String>,
         body: Vec<Stmt>,
     },
@@ -60,7 +60,10 @@ impl Function {
                 // Create a fresh environment for this call, enclosing the closure.
                 // Each call must get its own environment so that recursive calls
                 // don't clobber each other's parameters (e.g. `n` in fib).
-                let call_env = Environment::new_child(closure);
+                let call_env = match closure {
+                    Some(closure) => Environment::new_child(closure),
+                    None => Environment::new_local(),
+                };
                 // Store the parameters in the new environment
                 for (name, value) in params.iter().zip(arguments.iter()) {
                     call_env.borrow_mut().put(name, Some(value.clone()));

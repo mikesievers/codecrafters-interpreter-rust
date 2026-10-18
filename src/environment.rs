@@ -52,6 +52,13 @@ impl Environment {
         }))
     }
 
+    pub fn new_local() -> EnvRef {
+        Rc::new(RefCell::new(Environment {
+            enclosing: None,
+            values: HashMap::new(),
+        }))
+    }
+
     pub fn new_child(enclosing: &EnvRef) -> EnvRef {
         Rc::new(RefCell::new(Environment {
             enclosing: Some(enclosing.clone()),
@@ -61,6 +68,14 @@ impl Environment {
 
     pub fn put<T: Into<String>>(&mut self, name: T, value: Option<LoxValue>) {
         self.values.insert(name.into(), value);
+    }
+
+    pub fn contains<T: AsRef<str>>(&self, name: &T) -> bool {
+        self.values.contains_key(name.as_ref())
+            || self
+                .enclosing
+                .as_ref()
+                .is_some_and(|env| env.borrow().contains(name))
     }
 
     pub fn assign<T: Into<String>>(

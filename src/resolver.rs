@@ -20,12 +20,9 @@ impl Resolver {
     }
 
     pub fn resolve(&mut self, program: &Vec<Stmt>) -> Result<HashMap<ExprId, usize>, LoxError> {
-        // The global environment is also a global scope
-        self.begin_scope();
         for stmt in program {
             self.resolve_stmt(stmt)?;
         }
-        self.end_scope();
 
         Ok(self.locals.clone())
     }
@@ -202,10 +199,9 @@ mod test {
         println!("{program:?}");
         println!("{locals:?}");
 
-        // The first print prints a inside a block
-        assert_eq!(locals[&ExprId(1)], 1);
-        // The second print prints a inside its own environment (global)
-        assert_eq!(locals[&ExprId(2)], 0);
+        // Both references are global, so neither is resolved as a local.
+        assert!(!locals.contains_key(&ExprId(1)));
+        assert!(!locals.contains_key(&ExprId(2)));
     }
 
     #[test]
@@ -225,10 +221,10 @@ mod test {
         println!("{program:?}");
         println!("{locals:?}");
 
-        // The first print prints a inside a block
+        // The first print refers to the local a in the block.
         assert_eq!(locals[&ExprId(2)], 0);
-        // The second print prints a inside its own environment (global)
-        assert_eq!(locals[&ExprId(3)], 0);
+        // The second print refers to the global a.
+        assert!(!locals.contains_key(&ExprId(3)));
     }
 
     #[test]
@@ -252,8 +248,8 @@ mod test {
         println!("{program:?}");
         println!("{locals:?}");
 
-        // The first print a inside function must refer a level up
-        assert_eq!(locals[&ExprId(1)], 1);
+        // The first print a refers to the global a.
+        assert!(!locals.contains_key(&ExprId(1)));
         // The second print a inside function refers to shadowing var def just before it
         assert_eq!(locals[&ExprId(3)], 0);
         // The print b inside function refers to the paramter in same scope
@@ -281,9 +277,24 @@ mod test {
         println!("{program:?}");
         println!("{locals:?}");
 
-        // The first print a inside function must refer a level up
-        assert_eq!(locals[&ExprId(1)], 2);
-        // The second print a inside function refers to shadowing var def just before it
+        // The function's references to a are global, while the function name
+        // references are local to the enclosing block.
+        assert!(!locals.contains_key(&ExprId(1)));
         assert_eq!(locals[&ExprId(2)], 0);
+        assert_eq!(locals[&ExprId(5)], 0);
+    }
+
+    #[test]
+    pub fn test_resolver_local_variable_in_own_initializer() {
+        let scanner = Scanner::from_string("{ var a = a; }".to_string());
+        let (tokens, _) = scanner.tokenize();
+        let mut parser = Parser::new(tokens);
+        let program = parser.parse().unwrap();
+
+        let mut resolver = Resolver::new();
+        assert!(matches!(
+            resolver.resolve(&program),
+            Err(LoxError::SyntaxError(_))
+        ));
     }
 }

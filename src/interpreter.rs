@@ -15,6 +15,7 @@ use crate::{
 #[derive(Debug)]
 pub struct Interpreter {
     env: Option<EnvRef>,
+    globals: EnvRef,
     locals: HashMap<ExprId, usize>,
 }
 
@@ -36,12 +37,36 @@ impl Interpreter {
             .borrow_mut()
             .put("clock", Some(LoxValue::Function(CLOCK)));
 
-        let env = globals.clone();
-
         Interpreter {
-            env: Some(env),
+            env: None,
+            globals,
             locals,
         }
+    }
+
+    fn define_variable(&mut self, name: &str, value: Option<LoxValue>) {
+        match self.env.as_ref() {
+            Some(env) => env.borrow_mut().put(name, value),
+            None => self.globals.borrow_mut().put(name, value),
+        }
+    }
+
+    fn get_variable(&self, name: &str) -> Result<Option<LoxValue>, LoxError> {
+        if let Some(env) = &self.env
+            && env.borrow().contains(&name)
+        {
+            return env.borrow().get(&name);
+        }
+        self.globals.borrow().get(&name)
+    }
+
+    fn assign_variable(&mut self, name: &str, value: LoxValue) -> Result<(), LoxError> {
+        if let Some(env) = &self.env
+            && env.borrow().contains(&name)
+        {
+            return env.borrow_mut().assign(name, Some(value));
+        }
+        self.globals.borrow_mut().assign(name, Some(value))
     }
 
     pub fn interpret(&mut self, program: &[Stmt]) -> Result<(), LoxError> {
@@ -90,18 +115,10 @@ impl Interpreter {
                         Ok(v) => v,
                         Err(e) => return Signal::Err(e),
                     };
-                    self.env
-                        .as_mut()
-                        .expect("Interpreter must have an Environment")
-                        .borrow_mut()
-                        .put(name.clone(), Some(value));
+                    self.define_variable(name, Some(value));
                     Signal::Ok(LoxValue::Nil)
                 } else {
-                    self.env
-                        .as_mut()
-                        .expect("Interpreter must have an Environment")
-                        .borrow_mut()
-                        .put(name.clone(), None);
+                    self.define_variable(name, None);
                     Signal::Ok(LoxValue::Nil)
                 }
             }
@@ -109,13 +126,13 @@ impl Interpreter {
                 // Create new env for the block
                 // If an enclosing env has been specified (i.e. for enclosures),
                 // use that. Otherwise use the current enclosing/outer env
-                let outer_env = self
-                    .env
-                    .take()
-                    .expect("Interpreter must have an Environment");
+                let outer_env = self.env.take();
                 self.env = match new_enclosing_environment {
                     Some(closure) => Some(closure.clone()),
-                    None => Some(Environment::new_child(&outer_env)),
+                    None => Some(match &outer_env {
+                        Some(outer_env) => Environment::new_child(outer_env),
+                        None => Environment::new_local(),
+                    }),
                 };
                 // Execute statements, short-circuiting on Return/Err
                 let result = {
@@ -136,7 +153,7 @@ impl Interpreter {
                     short_circuit.unwrap_or(Signal::Ok(LoxValue::Nil))
                 };
                 // recreate old env (always, even when short-circuited by a return)
-                self.env = Some(outer_env);
+                self.env = outer_env;
                 result
             }
             Stmt::If {
@@ -177,14 +194,17 @@ impl Interpreter {
                 Signal::Ok(LoxValue::Nil)
             }
             Stmt::Function { name, params, body } => {
-                let env = self
-                    .env
-                    .as_mut()
-                    .expect("When defining a function, should always exist.");
-
-                let closure = env.clone();
-
-                env.borrow_mut().put(
+                let closure = self.env.clone();
+                let function_body = match &**body {
+                    Stmt::Block(stmts) => stmts.clone(),
+                    _ => {
+                        return Signal::Err(LoxError::RuntimeError(
+                            "Encountered a function with something other then a Block as Stmt."
+                                .into(),
+                        ));
+                    }
+                };
+                self.define_variable(
                     &name.lexeme,
                     Some(LoxValue::Function(Function::UserFunction {
                         name: name.lexeme.clone(),
@@ -193,14 +213,7 @@ impl Interpreter {
                             .iter()
                             .map(|token| token.lexeme.clone())
                             .collect_vec(),
-                        // body is a Box and needs dereferencing
-                        body: match &**body {
-                            Stmt::Block(stmts) => stmts.clone(),
-                            _ => return Signal::Err(LoxError::RuntimeError(
-                                "Encountered a function with something other then a Block as Stmt."
-                                    .into(),
-                            )),
-                        },
+                        body: function_body,
                     })),
                 );
                 Signal::Ok(LoxValue::Nil)
@@ -264,27 +277,13 @@ impl Interpreter {
                     "Unexpected Binary operator encountered".to_string(),
                 )),
             },
-            ExprKind::Variable(name) => {
-                match self
-                    .env
-                    .as_ref()
-                    .expect("Interpreter must have an env")
-                    .borrow()
-                    .get(name)?
-                {
-                    Some(val) => Ok(val),
-                    None => Ok(LoxValue::Nil),
-                }
-            }
+            ExprKind::Variable(name) => match self.get_variable(name)? {
+                Some(val) => Ok(val),
+                None => Ok(LoxValue::Nil),
+            },
             ExprKind::Assign { name, value } => {
                 let evaluated_value = self.evaluate(value)?;
-                self.env
-                    .as_mut()
-                    .expect("Interpreter must have an env")
-                    .borrow_mut()
-                    .assign(name.clone(), Some(evaluated_value.clone()))?;
-                // NOTE: This was previously an evaluation of the variable, and has been
-                // changed to just return the previous evaluated value.
+                self.assign_variable(name, evaluated_value.clone())?;
                 Ok(evaluated_value)
             }
             ExprKind::Logical {
@@ -577,32 +576,92 @@ mod tests {
     }
 
     #[test]
-    pub fn test_interpret_closure() {
+    pub fn test_globals_are_separate_from_local_scopes() {
         let program_text = "
-        var a = \"global\";
-        {
-        fun showA() {
-            print a;
-        }
-
-        showA();
-        var a = \"block\";
-        showA();
-        }
+            var a = 1;
+            {
+                var a = 2;
+                a = 3;
+            }
         "
         .to_string();
 
         let (mut interpreter, program) = interpreter_from_program_text(program_text);
+        interpreter.interpret(&program).unwrap();
 
-        println!("Interpreter: {interpreter:?}");
-        println!("Program: {program:?}");
-        // println!("Program lines: {:?}", &program[0..2]);
-        // Define a and showA
-        let _ = interpreter.interpret(&program[0..2]);
+        assert_eq!(
+            interpreter.globals.borrow().get(&"a").unwrap(),
+            Some(LoxValue::Number(1.0))
+        );
+        assert!(interpreter.env.is_none());
+    }
 
-        println!("Interpreter: {interpreter:?}");
-        println!("Program: {program:?}");
-        // TODO: Add meaningful tests, this is just a skeleton
-        // assert_eq!("todo", "implement real tests");
+    #[test]
+    pub fn test_functions_use_global_fallback_and_capture_locals() {
+        let program_text = "
+            var global = 1;
+            var result = nil;
+            {
+                var captured = 2;
+                fun update() {
+                    captured = 3;
+                    global = 4;
+                    result = captured;
+                }
+                update();
+            }
+        "
+        .to_string();
+
+        let (mut interpreter, program) = interpreter_from_program_text(program_text);
+        interpreter.interpret(&program).unwrap();
+
+        assert_eq!(
+            interpreter.globals.borrow().get(&"global").unwrap(),
+            Some(LoxValue::Number(4.0))
+        );
+        assert_eq!(
+            interpreter.globals.borrow().get(&"result").unwrap(),
+            Some(LoxValue::Number(3.0))
+        );
+    }
+
+    #[test]
+    pub fn test_top_level_functions_and_builtins_are_global() {
+        let program_text = "
+            var value = clock();
+            fun topLevel() { return value; }
+            var result = topLevel();
+        "
+        .to_string();
+
+        let (mut interpreter, program) = interpreter_from_program_text(program_text);
+        interpreter.interpret(&program).unwrap();
+
+        assert!(matches!(
+            interpreter.globals.borrow().get(&"value").unwrap(),
+            Some(LoxValue::Number(_))
+        ));
+        assert_eq!(
+            interpreter.globals.borrow().get(&"result").unwrap(),
+            interpreter.globals.borrow().get(&"value").unwrap()
+        );
+        let Some(LoxValue::Function(Function::UserFunction { closure, .. })) =
+            interpreter.globals.borrow().get(&"topLevel").unwrap()
+        else {
+            panic!("topLevel should be a user function");
+        };
+        assert!(closure.is_none());
+    }
+
+    #[test]
+    pub fn test_unknown_variable_still_errors() {
+        let (mut interpreter, program) =
+            interpreter_from_program_text("print missing;".to_string());
+
+        assert!(matches!(
+            interpreter.interpret(&program),
+            Err(LoxError::RuntimeError(message)) if message == "Unknown variable: missing"
+        ));
     }
 }
