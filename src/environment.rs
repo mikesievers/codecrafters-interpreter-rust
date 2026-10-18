@@ -100,7 +100,7 @@ impl Environment {
         }
     }
 
-    pub fn get_direct<T: AsRef<str>>(&self, name: &T) -> Result<Option<LoxValue>, LoxError> {
+    pub fn get<T: AsRef<str>>(&self, name: &T) -> Result<Option<LoxValue>, LoxError> {
         match self.values.get(name.as_ref()) {
             Some(val) => Ok(val.clone()),
             None => Err(LoxError::RuntimeError(format!(
@@ -122,7 +122,7 @@ mod tests {
         let fourtytwo = LoxValue::Number(42.0);
 
         env.borrow_mut().put("a", Some(fourtytwo.clone()));
-        assert_eq!(env.borrow().get_direct(&"a").unwrap(), Some(fourtytwo));
+        assert_eq!(env.borrow().get(&"a").unwrap(), Some(fourtytwo));
     }
 
     #[test]
@@ -143,15 +143,9 @@ mod tests {
         inner.borrow_mut().assign("c", Some(one.clone())).unwrap();
 
         // "a" is from the inner env, shadowed
-        assert_eq!(
-            inner.borrow().get_direct(&"a").unwrap(),
-            Some(twentythree.clone())
-        );
+        assert_eq!(inner.borrow().get(&"a").unwrap(), Some(twentythree.clone()));
         // "b" is from the outer env
-        assert_eq!(
-            outer.borrow().get_direct(&"b").unwrap(),
-            Some(fourtytwo.clone())
-        );
+        assert_eq!(outer.borrow().get(&"b").unwrap(), Some(fourtytwo.clone()));
 
         // Take the enclosing env out of the inner one and let the inner one expire
         // "a" should not be shadowed any more
@@ -161,13 +155,10 @@ mod tests {
             .enclosing
             .take()
             .expect("Inner environment must have an enclosing env");
-        assert_eq!(
-            outer.borrow().get_direct(&"a").unwrap(),
-            Some(fourtytwo.clone())
-        );
-        assert_eq!(outer.borrow().get_direct(&"b").unwrap(), Some(fourtytwo));
+        assert_eq!(outer.borrow().get(&"a").unwrap(), Some(fourtytwo.clone()));
+        assert_eq!(outer.borrow().get(&"b").unwrap(), Some(fourtytwo));
         // "c" should have been overwritten through the inner env
-        assert_eq!(outer.borrow().get_direct(&"c").unwrap(), Some(one));
+        assert_eq!(outer.borrow().get(&"c").unwrap(), Some(one));
     }
 
     #[test]

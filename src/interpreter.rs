@@ -59,8 +59,8 @@ impl Interpreter {
                 .expect("Must have an env")
                 .ancestor(distance)
                 .borrow()
-                .get_direct(&name),
-            None => self.globals.borrow().get_direct(&name),
+                .get(&name),
+            None => self.globals.borrow().get(&name),
         }
     }
 
@@ -594,7 +594,7 @@ mod tests {
         interpreter.interpret(&program).unwrap();
 
         assert_eq!(
-            interpreter.globals.borrow().get_direct(&"a").unwrap(),
+            interpreter.globals.borrow().get(&"a").unwrap(),
             Some(LoxValue::Number(1.0))
         );
         assert!(interpreter.env.is_none());
@@ -621,11 +621,11 @@ mod tests {
         interpreter.interpret(&program).unwrap();
 
         assert_eq!(
-            interpreter.globals.borrow().get_direct(&"global").unwrap(),
+            interpreter.globals.borrow().get(&"global").unwrap(),
             Some(LoxValue::Number(4.0))
         );
         assert_eq!(
-            interpreter.globals.borrow().get_direct(&"result").unwrap(),
+            interpreter.globals.borrow().get(&"result").unwrap(),
             Some(LoxValue::Number(3.0))
         );
     }
@@ -643,18 +643,15 @@ mod tests {
         interpreter.interpret(&program).unwrap();
 
         assert!(matches!(
-            interpreter.globals.borrow().get_direct(&"value").unwrap(),
+            interpreter.globals.borrow().get(&"value").unwrap(),
             Some(LoxValue::Number(_))
         ));
         assert_eq!(
-            interpreter.globals.borrow().get_direct(&"result").unwrap(),
-            interpreter.globals.borrow().get_direct(&"value").unwrap()
+            interpreter.globals.borrow().get(&"result").unwrap(),
+            interpreter.globals.borrow().get(&"value").unwrap()
         );
-        let Some(LoxValue::Function(Function::UserFunction { closure, .. })) = interpreter
-            .globals
-            .borrow()
-            .get_direct(&"topLevel")
-            .unwrap()
+        let Some(LoxValue::Function(Function::UserFunction { closure, .. })) =
+            interpreter.globals.borrow().get(&"topLevel").unwrap()
         else {
             panic!("topLevel should be a user function");
         };
