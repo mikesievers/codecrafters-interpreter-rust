@@ -165,6 +165,7 @@ mod tests {
         inner.borrow_mut().put("a", Some(twentythree.clone()));
 
         // the inner env is ancestor 0, it should hold 23
+        // Look directly into the HashMap to circumvent resolution logic
         assert_eq!(
             *inner.ancestor(0).as_ref().borrow().values.get("a").unwrap(),
             Some(LoxValue::Number(23.0))
