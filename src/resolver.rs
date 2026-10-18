@@ -259,4 +259,31 @@ mod test {
         // The print b inside function refers to the paramter in same scope
         assert_eq!(locals[&ExprId(4)], 0);
     }
+
+    #[test]
+    pub fn test_resolver_sample_show_a() {
+        let program_text = "
+        var a = \"global\";
+        {
+        fun showA() {
+            print a;
+        }
+
+        showA();
+        var a = \"block\";
+        showA();
+        }
+        "
+        .to_string();
+
+        let (locals, program) = resolve_program_text(program_text);
+
+        println!("{program:?}");
+        println!("{locals:?}");
+
+        // The first print a inside function must refer a level up
+        assert_eq!(locals[&ExprId(1)], 2);
+        // The second print a inside function refers to shadowing var def just before it
+        assert_eq!(locals[&ExprId(2)], 0);
+    }
 }
