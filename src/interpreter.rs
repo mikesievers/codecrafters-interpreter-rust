@@ -12,6 +12,7 @@ use crate::{
     token::{TokenType, TokenValue},
 };
 
+#[derive(Debug)]
 pub struct Interpreter {
     env: Option<EnvRef>,
     locals: HashMap<ExprId, usize>,
@@ -350,7 +351,7 @@ fn compare_if_numbers(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{expr::ExprId, token::Token};
+    use crate::{Scanner, expr::ExprId, parser::Parser, resolver::Resolver, token::Token};
 
     // Evaluation
     #[test]
@@ -558,5 +559,50 @@ mod tests {
             interpreter.evaluate(&sub).unwrap(),
             LoxValue::Boolean(false)
         );
+    }
+
+    // Tests for the interpreter with resolution pass
+    fn interpreter_from_program_text(program_text: String) -> (Interpreter, Vec<Stmt>) {
+        let scanner = Scanner::from_string(program_text);
+
+        let (tokens, _) = scanner.tokenize();
+
+        let mut parser = Parser::new(tokens);
+        let program = parser.parse().unwrap();
+
+        let mut resolver = Resolver::new();
+        let locals = resolver.resolve(&program).unwrap();
+
+        (Interpreter::new(locals), program)
+    }
+
+    #[test]
+    pub fn test_interpret_closure() {
+        let program_text = "
+        var a = \"global\";
+        {
+        fun showA() {
+            print a;
+        }
+
+        showA();
+        var a = \"block\";
+        showA();
+        }
+        "
+        .to_string();
+
+        let (mut interpreter, program) = interpreter_from_program_text(program_text);
+
+        println!("Interpreter: {interpreter:?}");
+        println!("Program: {program:?}");
+        // println!("Program lines: {:?}", &program[0..2]);
+        // Define a and showA
+        let _ = interpreter.interpret(&program[0..2]);
+
+        println!("Interpreter: {interpreter:?}");
+        println!("Program: {program:?}");
+        // TODO: Add meaningful tests, this is just a skeleton
+        // assert_eq!("todo", "implement real tests");
     }
 }
