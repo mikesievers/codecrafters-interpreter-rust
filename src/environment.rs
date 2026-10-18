@@ -11,7 +11,37 @@ pub type EnvRef = Rc<RefCell<Environment>>;
 #[derive(Clone, Debug)]
 pub struct Environment {
     enclosing: Option<EnvRef>,
-    values: HashMap<String, Option<LoxValue>>,
+    // NOTE: values are exposed as pub to allow for the tests.
+    // Usually this should be avoided, e.g. by wrapping get() of the values directly
+    pub values: HashMap<String, Option<LoxValue>>,
+}
+
+// To access enclosing environments ("ancestors"), define an extensiontrai
+// It is defined on Option<EnvRef> to also enable access the environment itself
+// (which cannot reference itself in terms of an Option<>)
+pub trait EnvironmentExt {
+    fn ancestor(&self, distance: usize) -> EnvRef;
+}
+
+impl EnvironmentExt for EnvRef {
+    fn ancestor(&self, distance: usize) -> EnvRef {
+        // Distance 0, Start with the current environment
+        let mut ancestor = self.clone();
+
+        // Distance 1+: Find the ancestor at <distance>
+        // If the distance is 0, the loop is skipped
+        for _ in 1..=distance {
+            let next_ancestor = ancestor
+                .borrow()
+                .enclosing
+                .as_ref()
+                .expect("Distance is too far when finding an ancestor.")
+                .clone();
+            ancestor = next_ancestor;
+        }
+
+        ancestor
+    }
 }
 
 impl Environment {
@@ -117,5 +147,36 @@ mod tests {
         assert_eq!(outer.borrow().get(&"b").unwrap(), Some(fourtytwo));
         // "c" should have been overwritten through the inner env
         assert_eq!(outer.borrow().get(&"c").unwrap(), Some(one));
+    }
+
+    #[test]
+    fn test_ancestor() {
+        // Define an outer environment and seed it
+        let outer = Environment::new_global();
+        let fourtytwo = LoxValue::Number(42.0);
+        outer.borrow_mut().put("a", Some(fourtytwo.clone()));
+
+        // Define an empty middle environment
+        let middle = Environment::new_child(&outer);
+
+        // Define an inner environment that shadows "a"
+        let inner = Environment::new_child(&middle);
+        let twentythree = LoxValue::Number(23.0);
+        inner.borrow_mut().put("a", Some(twentythree.clone()));
+
+        // the inner env is ancestor 0, it should hold 23
+        assert_eq!(
+            *inner.ancestor(0).as_ref().borrow().values.get("a").unwrap(),
+            Some(LoxValue::Number(23.0))
+        );
+
+        // the middle env is ancestor 1, it should be empty
+        assert_eq!(inner.ancestor(1).as_ref().borrow().values.get("a"), None);
+
+        // the outer env is ancestor 2, it should hold 42.0
+        assert_eq!(
+            *inner.ancestor(2).as_ref().borrow().values.get("a").unwrap(),
+            Some(LoxValue::Number(42.0))
+        );
     }
 }
