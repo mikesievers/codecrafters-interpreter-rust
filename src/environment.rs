@@ -90,13 +90,10 @@ impl Environment {
                 *entry.get_mut() = value;
                 Ok(())
             }
-            Entry::Vacant(vacant) => match self.enclosing {
-                Some(ref mut env) => env.borrow_mut().assign(name_str, value),
-                None => Err(LoxError::RuntimeError(format!(
-                    "Unknown variable: {}",
-                    vacant.key()
-                ))),
-            },
+            Entry::Vacant(vacant) => Err(LoxError::RuntimeError(format!(
+                "Unknown variable: {}",
+                vacant.key()
+            ))),
         }
     }
 
@@ -126,7 +123,7 @@ mod tests {
     }
 
     #[test]
-    fn test_enclosingd() {
+    fn test_enclosing() {
         // Define an outer environment and seed it
         let outer = Environment::new_global();
         let fourtytwo = LoxValue::Number(42.0);
@@ -140,7 +137,7 @@ mod tests {
         inner.borrow_mut().put("a", Some(twentythree.clone()));
         // Write into "c", which only exists in the enclosing env
         let one = LoxValue::Number(1.0);
-        inner.borrow_mut().assign("c", Some(one.clone())).unwrap();
+        outer.borrow_mut().assign("c", Some(one.clone())).unwrap();
 
         // "a" is from the inner env, shadowed
         assert_eq!(inner.borrow().get(&"a").unwrap(), Some(twentythree.clone()));

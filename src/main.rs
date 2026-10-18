@@ -121,7 +121,6 @@ fn main() -> ExitCode {
 
             // Note: When implementing:
             // Use an extension trait for the ancestor functionality on the Rc<RefCell<Environment>>
-            todo!("Change interpreter to use locals");
 
             match interpreter.interpret(&program) {
                 Ok(()) => (),

@@ -64,13 +64,22 @@ impl Interpreter {
         }
     }
 
-    fn assign_variable(&mut self, name: &str, value: LoxValue) -> Result<(), LoxError> {
-        if let Some(env) = &self.env
-            && env.borrow().contains(&name)
-        {
-            return env.borrow_mut().assign(name, Some(value));
+    fn assign_variable(
+        &mut self,
+        expr_id: ExprId,
+        name: &str,
+        value: LoxValue,
+    ) -> Result<(), LoxError> {
+        match self.locals.get(&expr_id) {
+            Some(&distance) => self
+                .env
+                .as_ref()
+                .expect("Must have an env")
+                .ancestor(distance)
+                .borrow_mut()
+                .assign(name, Some(value)),
+            None => self.globals.borrow_mut().assign(name, Some(value)),
         }
-        self.globals.borrow_mut().assign(name, Some(value))
     }
 
     pub fn interpret(&mut self, program: &[Stmt]) -> Result<(), LoxError> {
@@ -287,7 +296,7 @@ impl Interpreter {
             },
             ExprKind::Assign { name, value } => {
                 let evaluated_value = self.evaluate(value)?;
-                self.assign_variable(name, evaluated_value.clone())?;
+                self.assign_variable(expr.id, name, evaluated_value.clone())?;
                 Ok(evaluated_value)
             }
             ExprKind::Logical {
