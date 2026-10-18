@@ -175,8 +175,17 @@ mod test {
     use super::*;
 
     #[test]
-    pub fn test_resolver() {
-        let scanner = Scanner::from_file(&"testdata/test_resolve_1.lox".to_string()).unwrap();
+    pub fn test_resolver_simple_block() {
+        let program_text = "
+        var a=3;
+        {
+          print a;
+        }
+        print a;
+        "
+        .to_string();
+
+        let scanner = Scanner::from_string(program_text);
 
         let (tokens, _) = scanner.tokenize();
 
@@ -184,9 +193,45 @@ mod test {
         let program = parser.parse().unwrap();
 
         let mut resolver = Resolver::new();
-        // TODO: use the resulting locals map
         let locals = resolver.resolve(&program).unwrap();
 
-        assert_eq!("todo","Test the resolver result");
+        println!("{:?}", program);
+        println!("{:?}", locals);
+
+        // The first print prints a inside a block
+        assert_eq!(locals[&ExprId(1)], 1);
+        // The second print prints a inside its own environment (global)
+        assert_eq!(locals[&ExprId(2)], 0);
+    }
+
+    #[test]
+    pub fn test_resolver_shadow_inside_simple_block() {
+        let program_text = "
+        var a=3;
+        {
+          var a=4;
+          print a;
+        }
+        print a;
+        "
+        .to_string();
+
+        let scanner = Scanner::from_string(program_text);
+
+        let (tokens, _) = scanner.tokenize();
+
+        let mut parser = Parser::new(tokens);
+        let program = parser.parse().unwrap();
+
+        let mut resolver = Resolver::new();
+        let locals = resolver.resolve(&program).unwrap();
+
+        println!("{:?}", program);
+        println!("{:?}", locals);
+
+        // The first print prints a inside a block
+        assert_eq!(locals[&ExprId(2)], 0);
+        // The second print prints a inside its own environment (global)
+        assert_eq!(locals[&ExprId(3)], 0);
     }
 }
