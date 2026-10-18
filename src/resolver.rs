@@ -174,6 +174,18 @@ mod test {
 
     use super::*;
 
+    fn resolve_program_text(program_text: String) -> (HashMap<ExprId, usize>, Vec<Stmt>) {
+        let scanner = Scanner::from_string(program_text);
+
+        let (tokens, _) = scanner.tokenize();
+
+        let mut parser = Parser::new(tokens);
+        let program = parser.parse().unwrap();
+
+        let mut resolver = Resolver::new();
+        (resolver.resolve(&program).unwrap(), program)
+    }
+
     #[test]
     pub fn test_resolver_simple_block() {
         let program_text = "
@@ -185,18 +197,10 @@ mod test {
         "
         .to_string();
 
-        let scanner = Scanner::from_string(program_text);
+        let (locals, program) = resolve_program_text(program_text);
 
-        let (tokens, _) = scanner.tokenize();
-
-        let mut parser = Parser::new(tokens);
-        let program = parser.parse().unwrap();
-
-        let mut resolver = Resolver::new();
-        let locals = resolver.resolve(&program).unwrap();
-
-        println!("{:?}", program);
-        println!("{:?}", locals);
+        println!("{program:?}");
+        println!("{locals:?}");
 
         // The first print prints a inside a block
         assert_eq!(locals[&ExprId(1)], 1);
@@ -216,18 +220,10 @@ mod test {
         "
         .to_string();
 
-        let scanner = Scanner::from_string(program_text);
+        let (locals, program) = resolve_program_text(program_text);
 
-        let (tokens, _) = scanner.tokenize();
-
-        let mut parser = Parser::new(tokens);
-        let program = parser.parse().unwrap();
-
-        let mut resolver = Resolver::new();
-        let locals = resolver.resolve(&program).unwrap();
-
-        println!("{:?}", program);
-        println!("{:?}", locals);
+        println!("{program:?}");
+        println!("{locals:?}");
 
         // The first print prints a inside a block
         assert_eq!(locals[&ExprId(2)], 0);
