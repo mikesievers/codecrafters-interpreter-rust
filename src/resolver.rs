@@ -230,4 +230,33 @@ mod test {
         // The second print prints a inside its own environment (global)
         assert_eq!(locals[&ExprId(3)], 0);
     }
+
+    #[test]
+    pub fn test_resolver_global_from_function() {
+        let program_text = "
+        var a=3;
+
+        fun showA(b){
+          print a;
+          var a=5;
+          print a;
+          print b;
+        }
+
+        showA(42.0);
+        "
+        .to_string();
+
+        let (locals, program) = resolve_program_text(program_text);
+
+        println!("{program:?}");
+        println!("{locals:?}");
+
+        // The first print a inside function must refer a level up
+        assert_eq!(locals[&ExprId(1)], 1);
+        // The second print a inside function refers to shadowing var def just before it
+        assert_eq!(locals[&ExprId(3)], 0);
+        // The print b inside function refers to the paramter in same scope
+        assert_eq!(locals[&ExprId(4)], 0);
+    }
 }
