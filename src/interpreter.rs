@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use itertools::Itertools;
 
 use crate::{
-    environment::{EnvRef, Environment},
+    environment::{EnvRef, Environment, EnvironmentExt},
     expr::{Expr, ExprId, ExprKind},
     lox_error::LoxError,
     lox_function::{CLOCK, Function},
@@ -51,13 +51,17 @@ impl Interpreter {
         }
     }
 
-    fn get_variable(&self, name: &str) -> Result<Option<LoxValue>, LoxError> {
-        if let Some(env) = &self.env
-            && env.borrow().contains(&name)
-        {
-            return env.borrow().get(&name);
+    fn lookup_variable(&self, expr_id: ExprId, name: &str) -> Result<Option<LoxValue>, LoxError> {
+        match self.locals.get(&expr_id) {
+            Some(&distance) => self
+                .env
+                .as_ref()
+                .expect("Must have an env")
+                .ancestor(distance)
+                .borrow()
+                .get_direct(&name),
+            None => self.globals.borrow().get_direct(&name),
         }
-        self.globals.borrow().get(&name)
     }
 
     fn assign_variable(&mut self, name: &str, value: LoxValue) -> Result<(), LoxError> {
@@ -277,7 +281,7 @@ impl Interpreter {
                     "Unexpected Binary operator encountered".to_string(),
                 )),
             },
-            ExprKind::Variable(name) => match self.get_variable(name)? {
+            ExprKind::Variable(name) => match self.lookup_variable(expr.id, name)? {
                 Some(val) => Ok(val),
                 None => Ok(LoxValue::Nil),
             },
@@ -590,7 +594,7 @@ mod tests {
         interpreter.interpret(&program).unwrap();
 
         assert_eq!(
-            interpreter.globals.borrow().get(&"a").unwrap(),
+            interpreter.globals.borrow().get_direct(&"a").unwrap(),
             Some(LoxValue::Number(1.0))
         );
         assert!(interpreter.env.is_none());
@@ -617,11 +621,11 @@ mod tests {
         interpreter.interpret(&program).unwrap();
 
         assert_eq!(
-            interpreter.globals.borrow().get(&"global").unwrap(),
+            interpreter.globals.borrow().get_direct(&"global").unwrap(),
             Some(LoxValue::Number(4.0))
         );
         assert_eq!(
-            interpreter.globals.borrow().get(&"result").unwrap(),
+            interpreter.globals.borrow().get_direct(&"result").unwrap(),
             Some(LoxValue::Number(3.0))
         );
     }
@@ -639,15 +643,18 @@ mod tests {
         interpreter.interpret(&program).unwrap();
 
         assert!(matches!(
-            interpreter.globals.borrow().get(&"value").unwrap(),
+            interpreter.globals.borrow().get_direct(&"value").unwrap(),
             Some(LoxValue::Number(_))
         ));
         assert_eq!(
-            interpreter.globals.borrow().get(&"result").unwrap(),
-            interpreter.globals.borrow().get(&"value").unwrap()
+            interpreter.globals.borrow().get_direct(&"result").unwrap(),
+            interpreter.globals.borrow().get_direct(&"value").unwrap()
         );
-        let Some(LoxValue::Function(Function::UserFunction { closure, .. })) =
-            interpreter.globals.borrow().get(&"topLevel").unwrap()
+        let Some(LoxValue::Function(Function::UserFunction { closure, .. })) = interpreter
+            .globals
+            .borrow()
+            .get_direct(&"topLevel")
+            .unwrap()
         else {
             panic!("topLevel should be a user function");
         };
