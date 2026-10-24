@@ -38,12 +38,12 @@ impl Resolver {
             }
             Stmt::Expression(expr) => self.resolve_expr(expr)?,
             Stmt::Function { name, params, body } => {
-                self.declare(&name.lexeme);
+                self.declare(&name.lexeme)?;
                 self.define(&name.lexeme);
 
                 self.begin_scope();
                 for param in params {
-                    self.declare(&param.lexeme);
+                    self.declare(&param.lexeme)?;
                     self.define(&param.lexeme);
                 }
                 // resolve the body
@@ -79,7 +79,7 @@ impl Resolver {
                 }
             }
             Stmt::Var { name, initializer } => {
-                self.declare(name);
+                self.declare(name)?;
                 if let Some(initializer) = initializer {
                     self.resolve_expr(initializer)?;
                 }
@@ -141,11 +141,20 @@ impl Resolver {
         self.scopes.pop();
     }
 
-    fn declare(&mut self, name: &str) {
+    fn declare(&mut self, name: &str) -> Result<(), LoxError> {
+        // if the variable already exists, it's an error
+        if let Some(scope) = self.scopes.last()
+            && scope.contains_key(name)
+        {
+            return Err(LoxError::SyntaxError(
+                "Already a variable with this name in scope".into(),
+            ));
+        }
         // A variable has been declared but not defined -> key exists, but value is false
         if let Some(scope) = self.scopes.last_mut() {
             scope.insert(name.to_string(), false);
         }
+        Ok(())
     }
 
     fn define(&mut self, name: &str) {

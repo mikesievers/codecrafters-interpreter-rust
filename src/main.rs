@@ -113,8 +113,12 @@ fn main() -> ExitCode {
 
             let mut resolver = Resolver::new();
             // TODO: use the resulting locals map
-            let Ok(locals) = resolver.resolve(&program) else {
-                return ExitCode::from(EXIT_CODE_SYNTAX_ERROR);
+            let locals = match resolver.resolve(&program) {
+                Ok(locals) => locals,
+                Err(e) => {
+                    eprintln!("Parsing failed: {e}");
+                    return ExitCode::from(EXIT_CODE_SYNTAX_ERROR);
+                }
             };
 
             let mut interpreter = Interpreter::new(locals);
