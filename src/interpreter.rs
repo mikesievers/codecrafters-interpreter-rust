@@ -301,8 +301,7 @@ impl Interpreter {
             },
             ExprKind::Variable(name) => match self.lookup_variable(expr.id, name)? {
                 Some(val) => Ok(val),
-                //None => Ok(LoxValue::Nil),
-                None => Err(RuntimeError(format!("Could not resolve variable {}", name))),
+                None => Ok(LoxValue::Nil),
             },
             ExprKind::Assign { name, value } => {
                 let evaluated_value = self.evaluate(value)?;
