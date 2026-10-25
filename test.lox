@@ -1,10 +1,5 @@
-// Multiple class declarations with empty body
-class Robot {
-  some(thing) {
-    print "something";
-  }
+{
+  class Dinosaur {}
+  print Dinosaur;
 }
-class Wizard {}
-print Robot;
-print Wizard;
-print "Both classes successfully printed";
+print Dinosaur;
