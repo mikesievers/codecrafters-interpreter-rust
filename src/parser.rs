@@ -148,11 +148,11 @@ fn parse_class_declaration(parser: &mut Parser) -> Result<Stmt, LoxError> {
     let Ok(_) = parser.consume(&TokenType::RightBrace) else {
         return Err(LoxError::SyntaxError("Expect '}' after class body".into()));
     };
-    return Ok(Stmt::Class {
+    Ok(Stmt::Class {
         id: parser.get_next_id(),
         name,
         methods: Box::new(methods),
-    });
+    })
 }
 
 // funDecl        → "fun" function ;
