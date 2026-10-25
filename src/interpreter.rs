@@ -6,7 +6,7 @@ use crate::{
     environment::{EnvRef, Environment, EnvironmentExt},
     expr::{Expr, ExprId, ExprKind},
     lox_class::Class,
-    lox_error::LoxError,
+    lox_error::LoxError::{self, RuntimeError},
     lox_function::{CLOCK, Function},
     lox_value::LoxValue,
     stmt::Stmt,
@@ -303,7 +303,8 @@ impl Interpreter {
             },
             ExprKind::Variable(name) => match self.lookup_variable(expr.id, name)? {
                 Some(val) => Ok(val),
-                None => Ok(LoxValue::Nil),
+                //None => Ok(LoxValue::Nil),
+                None => Err(RuntimeError("Could not resolve variable".into())),
             },
             ExprKind::Assign { name, value } => {
                 let evaluated_value = self.evaluate(value)?;
