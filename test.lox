@@ -1,4 +1,15 @@
-{
-  var a = "first";
-  var a2 = "second";
+fun outer() {
+  fun inner() {
+    return "ok";
+  }
+
+  return "also ok";
+}
+
+if (true) {
+  fun nested() {
+    return;
+  }
+
+  return "not ok";
 }

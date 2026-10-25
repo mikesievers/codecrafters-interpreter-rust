@@ -6,9 +6,14 @@ use crate::{
     stmt::Stmt,
 };
 
+enum FunctionType {
+    Function,
+}
+
 pub struct Resolver {
     scopes: Vec<HashMap<String, bool>>,
     locals: HashMap<ExprId, usize>,
+    current_function: Option<FunctionType>,
 }
 
 impl Resolver {
@@ -16,6 +21,7 @@ impl Resolver {
         Resolver {
             scopes: Vec::new(),
             locals: HashMap::new(),
+            current_function: None,
         }
     }
 
@@ -41,6 +47,8 @@ impl Resolver {
                 self.declare(&name.lexeme)?;
                 self.define(&name.lexeme);
 
+                let enclosing_function = self.current_function.replace(FunctionType::Function);
+
                 self.begin_scope();
                 for param in params {
                     self.declare(&param.lexeme)?;
@@ -58,6 +66,8 @@ impl Resolver {
                     _ => self.resolve_stmt(body)?,
                 }
                 self.end_scope();
+
+                self.current_function = enclosing_function;
             }
             Stmt::If {
                 condition,
@@ -74,6 +84,11 @@ impl Resolver {
                 self.resolve_expr(expr)?;
             }
             Stmt::Return { value, .. } => {
+                if self.current_function.is_none() {
+                    return Err(LoxError::SyntaxError(
+                        "Can't return from top-level code.".into(),
+                    ));
+                }
                 if let Some(value) = value {
                     self.resolve_expr(value)?;
                 }

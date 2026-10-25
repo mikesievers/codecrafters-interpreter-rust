@@ -116,7 +116,7 @@ fn main() -> ExitCode {
             let locals = match resolver.resolve(&program) {
                 Ok(locals) => locals,
                 Err(e) => {
-                    eprintln!("Parsing failed: {e}");
+                    eprintln!("Resolving failed: {e}");
                     return ExitCode::from(EXIT_CODE_SYNTAX_ERROR);
                 }
             };
