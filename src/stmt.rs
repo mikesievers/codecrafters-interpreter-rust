@@ -2,12 +2,20 @@ use std::fmt::Display;
 
 use itertools::Itertools;
 
-use crate::{expr::Expr, token::Token};
+use crate::{
+    expr::{Expr, ExprId},
+    token::Token,
+};
 
 #[derive(Clone, Debug)]
 pub enum Stmt {
     Block(Vec<Stmt>),
     Expression(Expr),
+    Class {
+        id: ExprId,
+        name: Token,
+        methods: Box<Vec<Stmt>>,
+    },
     Function {
         name: Token,
         params: Vec<Token>,
@@ -71,6 +79,9 @@ impl Display for Stmt {
                 write!(f, "<fn {name}({params_string}){{\n{body}\n}}>")
             }
             Stmt::Return { .. } => write!(f, "return <expr display not implemented>"),
+            Stmt::Class { name, .. } => {
+                write!(f, "{}", name.lexeme)
+            }
         }
     }
 }

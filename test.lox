@@ -1,15 +1,10 @@
-fun outer() {
-  fun inner() {
-    return "ok";
+// Multiple class declarations with empty body
+class Robot {
+  some(thing) {
+    print "something";
   }
-
-  return "also ok";
 }
-
-if (true) {
-  fun nested() {
-    return;
-  }
-
-  return "not ok";
-}
+class Wizard {}
+print Robot;
+print Wizard;
+print "Both classes successfully printed";

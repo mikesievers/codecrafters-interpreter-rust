@@ -2,6 +2,7 @@
 mod environment;
 mod expr;
 mod interpreter;
+mod lox_class;
 mod lox_error;
 mod lox_function;
 mod lox_value;
@@ -123,7 +124,7 @@ fn main() -> ExitCode {
 
             let mut interpreter = Interpreter::new(locals);
 
-            // Note: When implementing:
+            // TODO: When implementing:
             // Use an extension trait for the ancestor functionality on the Rc<RefCell<Environment>>
 
             match interpreter.interpret(&program) {

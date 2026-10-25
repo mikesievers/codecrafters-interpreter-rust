@@ -104,6 +104,10 @@ impl Resolver {
                 self.resolve_expr(condition)?;
                 self.resolve_stmt(body)?;
             }
+            Stmt::Class { id, name, methods } => {
+                self.declare(&name.lexeme)?;
+                self.define(&name.lexeme);
+            }
         }
         Ok(())
     }

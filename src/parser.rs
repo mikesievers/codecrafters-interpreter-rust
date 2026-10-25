@@ -115,9 +115,13 @@ fn parse_program(parser: &mut Parser) -> Result<Vec<Stmt>, LoxError> {
 }
 
 // declaration    → funDecl
+//                | classDecl
 //                | varDecl
 //                | statement ;
 fn parse_declaration(parser: &mut Parser) -> Result<Stmt, LoxError> {
+    if parser.matches(&[TokenType::Class]) {
+        return parse_class_declaration(parser);
+    }
     if parser.matches(&[TokenType::Fun]) {
         return parse_function(parser, FUNCTION);
     }
@@ -125,6 +129,30 @@ fn parse_declaration(parser: &mut Parser) -> Result<Stmt, LoxError> {
         return parse_var_declaration(parser);
     }
     parse_statement(parser)
+}
+
+// classDecl      → "class" IDENTIFIER "{" function* "}" ;
+fn parse_class_declaration(parser: &mut Parser) -> Result<Stmt, LoxError> {
+    let Ok(name) = parser.consume(&TokenType::Identifier) else {
+        return Err(LoxError::SyntaxError("Expect class name".into()));
+    };
+    let Ok(_) = parser.consume(&TokenType::LeftBrace) else {
+        return Err(LoxError::SyntaxError("Expect '{' before class body".into()));
+    };
+
+    let mut methods = Vec::new();
+    while !parser.check(&TokenType::RightBrace) && !parser.is_at_end() {
+        methods.push(parse_function(parser, METHOD)?);
+    }
+
+    let Ok(_) = parser.consume(&TokenType::RightBrace) else {
+        return Err(LoxError::SyntaxError("Expect '}' after class body".into()));
+    };
+    return Ok(Stmt::Class {
+        id: parser.get_next_id(),
+        name,
+        methods: Box::new(methods),
+    });
 }
 
 // funDecl        → "fun" function ;

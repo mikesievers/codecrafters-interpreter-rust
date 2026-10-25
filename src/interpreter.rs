@@ -5,6 +5,7 @@ use itertools::Itertools;
 use crate::{
     environment::{EnvRef, Environment, EnvironmentExt},
     expr::{Expr, ExprId, ExprKind},
+    lox_class::Class,
     lox_error::LoxError,
     lox_function::{CLOCK, Function},
     lox_value::LoxValue,
@@ -238,6 +239,16 @@ impl Interpreter {
                 },
                 None => Signal::Return(LoxValue::Nil),
             },
+            Stmt::Class { id, name, .. } => {
+                self.define_variable(&name.lexeme, None);
+                let class = Class::new(&name.lexeme);
+                // TODO: The expression ID should get a real meaning
+                // Using the next value as a workaround until it causes a
+                // problem that needs fixing
+                self.assign_variable(*id, &name.lexeme, LoxValue::Class(class));
+
+                Signal::Ok(LoxValue::Nil)
+            }
         }
     }
 
