@@ -107,6 +107,10 @@ impl Resolver {
             Stmt::Class { id, name, methods } => {
                 self.declare(&name.lexeme)?;
                 self.define(&name.lexeme);
+                // Because the class is being declared in this statement, the distance must be 0
+                if !self.scopes.is_empty() {
+                    self.locals.insert(*id, 0);
+                }
             }
         }
         Ok(())
