@@ -1,5 +1,3 @@
-{
-  class Dinosaur {}
-  print Dinosaur;
-}
-print Dinosaur;
+class Spaceship {}
+var falcon = Spaceship();
+print falcon;
