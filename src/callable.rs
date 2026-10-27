@@ -1,6 +1,8 @@
+use std::fmt::{Debug, Display};
+
 use crate::{interpreter::Interpreter, lox_error::LoxError, lox_value::LoxValue};
 
-pub trait Callable {
+pub trait Callable: Debug + Display {
     fn arity(&self) -> usize;
     fn call(
         &self,
