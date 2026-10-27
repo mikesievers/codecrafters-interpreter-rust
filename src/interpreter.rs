@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use itertools::Itertools;
 
 use crate::{
+    callable::Callable,
     environment::{EnvRef, Environment, EnvironmentExt},
     expr::{Expr, ExprId, ExprKind},
     lox_class::Class,
