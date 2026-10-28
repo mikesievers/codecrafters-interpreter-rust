@@ -1,5 +1,4 @@
 #![warn(clippy::pedantic)]
-mod callable;
 mod environment;
 mod expr;
 mod interpreter;

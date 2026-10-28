@@ -4,7 +4,6 @@ use std::{
 };
 
 use crate::{
-    callable::Callable,
     environment::{EnvRef, Environment},
     interpreter::Interpreter,
     lox_error::LoxError,
@@ -38,14 +37,14 @@ impl Display for Function {
     }
 }
 
-impl Callable for Function {
-    fn arity(&self) -> usize {
+impl Function {
+    pub fn arity(&self) -> usize {
         match self {
             Function::BuiltinFunction { n_args, .. } => *n_args,
             Function::UserFunction { params, .. } => params.len(),
         }
     }
-    fn call(
+    pub fn call(
         &self,
         interpreter: &mut Interpreter,
         arguments: Vec<LoxValue>,

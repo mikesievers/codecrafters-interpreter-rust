@@ -1,9 +1,8 @@
-use std::{collections::HashMap, rc::Rc};
+use std::collections::HashMap;
 
 use itertools::Itertools;
 
 use crate::{
-    callable::Callable,
     environment::{EnvRef, Environment, EnvironmentExt},
     expr::{Expr, ExprId, ExprKind},
     lox_class::Class,
@@ -37,7 +36,7 @@ impl Interpreter {
         let globals = Environment::new_global();
         globals
             .borrow_mut()
-            .put("clock", Some(LoxValue::Callable(Rc::new(CLOCK))));
+            .put("clock", Some(LoxValue::Function(CLOCK)));
 
         Interpreter {
             env: None,
@@ -221,7 +220,7 @@ impl Interpreter {
                 };
                 self.define_variable(
                     &name.lexeme,
-                    Some(LoxValue::Callable(Rc::new(Function::UserFunction {
+                    Some(LoxValue::Function(Function::UserFunction {
                         name: name.lexeme.clone(),
                         closure,
                         params: params
@@ -229,7 +228,7 @@ impl Interpreter {
                             .map(|token| token.lexeme.clone())
                             .collect_vec(),
                         body: function_body,
-                    }))),
+                    })),
                 );
                 Signal::Ok(LoxValue::Nil)
             }
@@ -330,7 +329,7 @@ impl Interpreter {
                 arguments,
             } => {
                 let callee = match self.evaluate(callee)? {
-                    LoxValue::Callable(callable) => callable,
+                    LoxValue::Function(function) => function,
                     _ => {
                         return Err(LoxError::RuntimeError(
                             "Callee is not a function".to_string(),
@@ -669,12 +668,12 @@ mod tests {
             interpreter.globals.borrow().get(&"result").unwrap(),
             interpreter.globals.borrow().get(&"value").unwrap()
         );
-        let Some(LoxValue::Callable(callable)) =
+        let Some(LoxValue::Function(Function::UserFunction { closure, .. })) =
             interpreter.globals.borrow().get(&"topLevel").unwrap()
         else {
-            panic!("topLevel should be a callable");
+            panic!("topLevel should be a user function");
         };
-        assert_eq!(callable.to_string(), "topLevel");
+        assert!(closure.is_none());
     }
 
     #[test]
