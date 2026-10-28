@@ -12,7 +12,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone)]
-pub enum Function {
+pub enum Callable {
     BuiltinFunction {
         name: &'static str,
         n_args: usize,
@@ -26,22 +26,22 @@ pub enum Function {
     },
 }
 
-impl Display for Function {
+impl Display for Callable {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Function::BuiltinFunction { name, .. } => {
+            Callable::BuiltinFunction { name, .. } => {
                 write!(f, "{name}")
             }
-            Function::UserFunction { name, .. } => write!(f, "{name}"),
+            Callable::UserFunction { name, .. } => write!(f, "{name}"),
         }
     }
 }
 
-impl Function {
+impl Callable {
     pub fn arity(&self) -> usize {
         match self {
-            Function::BuiltinFunction { n_args, .. } => *n_args,
-            Function::UserFunction { params, .. } => params.len(),
+            Callable::BuiltinFunction { n_args, .. } => *n_args,
+            Callable::UserFunction { params, .. } => params.len(),
         }
     }
     pub fn call(
@@ -50,8 +50,8 @@ impl Function {
         arguments: Vec<LoxValue>,
     ) -> Result<LoxValue, LoxError> {
         match self {
-            Function::BuiltinFunction { call, .. } => call(interpreter, arguments),
-            Function::UserFunction {
+            Callable::BuiltinFunction { call, .. } => call(interpreter, arguments),
+            Callable::UserFunction {
                 params,
                 body,
                 closure,
@@ -81,7 +81,7 @@ impl Function {
 // Built in functions
 
 // clock()
-pub const CLOCK: Function = Function::BuiltinFunction {
+pub const CLOCK: Callable = Callable::BuiltinFunction {
     name: "clock",
     n_args: 0,
     call: |_interpreter, _arguments| {

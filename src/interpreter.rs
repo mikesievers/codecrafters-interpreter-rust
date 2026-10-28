@@ -5,9 +5,9 @@ use itertools::Itertools;
 use crate::{
     environment::{EnvRef, Environment, EnvironmentExt},
     expr::{Expr, ExprId, ExprKind},
+    lox_callable::{CLOCK, Callable},
     lox_class::Class,
     lox_error::LoxError::{self, RuntimeError},
-    lox_function::{CLOCK, Function},
     lox_value::LoxValue,
     stmt::Stmt,
     token::{TokenType, TokenValue},
@@ -36,7 +36,7 @@ impl Interpreter {
         let globals = Environment::new_global();
         globals
             .borrow_mut()
-            .put("clock", Some(LoxValue::Function(CLOCK)));
+            .put("clock", Some(LoxValue::Callable(CLOCK)));
 
         Interpreter {
             env: None,
@@ -220,7 +220,7 @@ impl Interpreter {
                 };
                 self.define_variable(
                     &name.lexeme,
-                    Some(LoxValue::Function(Function::UserFunction {
+                    Some(LoxValue::Callable(Callable::UserFunction {
                         name: name.lexeme.clone(),
                         closure,
                         params: params
@@ -329,7 +329,7 @@ impl Interpreter {
                 arguments,
             } => {
                 let callee = match self.evaluate(callee)? {
-                    LoxValue::Function(function) => function,
+                    LoxValue::Callable(function) => function,
                     _ => {
                         return Err(LoxError::RuntimeError(
                             "Callee is not a function".to_string(),
@@ -668,7 +668,7 @@ mod tests {
             interpreter.globals.borrow().get(&"result").unwrap(),
             interpreter.globals.borrow().get(&"value").unwrap()
         );
-        let Some(LoxValue::Function(Function::UserFunction { closure, .. })) =
+        let Some(LoxValue::Callable(Callable::UserFunction { closure, .. })) =
             interpreter.globals.borrow().get(&"topLevel").unwrap()
         else {
             panic!("topLevel should be a user function");

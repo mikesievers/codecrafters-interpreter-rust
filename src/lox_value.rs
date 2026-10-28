@@ -3,7 +3,7 @@ use std::{
     ops::{Add, Div, Mul, Neg, Not, Sub},
 };
 
-use crate::{lox_class::Class, lox_error::LoxError, lox_function::Function};
+use crate::{lox_callable::Callable, lox_class::Class, lox_error::LoxError};
 
 // The LoxValue is almost identical to the TokenValue
 // The exception is the String - while the TokenValue
@@ -16,7 +16,7 @@ pub enum LoxValue {
     Number(f64),
     Boolean(bool),
     Nil,
-    Function(Function),
+    Callable(Callable),
     Class(Class),
 }
 
@@ -27,7 +27,7 @@ impl Display for LoxValue {
             LoxValue::Number(n) => format!("{n}"),
             LoxValue::Boolean(b) => b.to_string(),
             LoxValue::Nil => "nil".to_string(),
-            LoxValue::Function(function) => format!("<fn {function}>"),
+            LoxValue::Callable(function) => format!("<fn {function}>"),
             LoxValue::Class(class) => format!("{class}"),
         };
         write!(f, "{output}")

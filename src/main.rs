@@ -2,9 +2,9 @@
 mod environment;
 mod expr;
 mod interpreter;
+mod lox_callable;
 mod lox_class;
 mod lox_error;
-mod lox_function;
 mod lox_value;
 mod parser;
 mod resolver;

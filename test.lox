@@ -1,3 +1,4 @@
+print clock();
 class Spaceship {}
 var falcon = Spaceship();
 
