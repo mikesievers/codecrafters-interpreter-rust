@@ -17,7 +17,6 @@ pub enum LoxValue {
     Boolean(bool),
     Nil,
     Callable(Callable),
-    Class(Class),
 }
 
 impl Display for LoxValue {
@@ -28,7 +27,6 @@ impl Display for LoxValue {
             LoxValue::Boolean(b) => b.to_string(),
             LoxValue::Nil => "nil".to_string(),
             LoxValue::Callable(function) => format!("<fn {function}>"),
-            LoxValue::Class(class) => format!("{class}"),
         };
         write!(f, "{output}")
     }

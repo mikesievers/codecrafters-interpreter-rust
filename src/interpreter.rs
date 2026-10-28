@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, rc::Rc};
 
 use itertools::Itertools;
 
@@ -242,7 +242,11 @@ impl Interpreter {
             Stmt::Class { id, name, .. } => {
                 self.define_variable(&name.lexeme, None);
                 let class = Class::new(&name.lexeme);
-                match self.assign_variable(*id, &name.lexeme, LoxValue::Class(class)) {
+                match self.assign_variable(
+                    *id,
+                    &name.lexeme,
+                    LoxValue::Callable(Callable::Class(Rc::new(class))),
+                ) {
                     Ok(()) => Signal::Ok(LoxValue::Nil),
                     Err(e) => Signal::Err(e),
                 }
