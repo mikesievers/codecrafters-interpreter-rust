@@ -33,7 +33,12 @@ impl Display for LoxValue {
             LoxValue::Number(n) => format!("{n}"),
             LoxValue::Boolean(b) => b.to_string(),
             LoxValue::Nil => "nil".to_string(),
-            LoxValue::Callable(function) => format!("<fn {function}>"),
+            LoxValue::Callable(callable) => match callable {
+                Callable::Class(class) => {
+                    format!("{class}")
+                }
+                _ => format!("<fn {callable}>"),
+            },
             LoxValue::Instance(instance) => {
                 format!("{} instance", instance.borrow().class.name)
             }

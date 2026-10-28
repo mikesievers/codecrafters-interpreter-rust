@@ -2,4 +2,5 @@ print clock();
 class Spaceship {}
 var falcon = Spaceship();
 
+print Spaceship;
 print falcon;
