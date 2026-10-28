@@ -1,3 +1,4 @@
 class Spaceship {}
 var falcon = Spaceship();
+
 print falcon;
