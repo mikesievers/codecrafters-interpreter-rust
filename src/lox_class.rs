@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 #[derive(Debug, Clone)]
 pub struct Class {
-    name: String,
+    pub name: String,
 }
 
 impl Display for Class {

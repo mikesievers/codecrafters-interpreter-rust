@@ -1,11 +1,13 @@
 use std::{
     fmt::Display,
+    rc::Rc,
     time::{SystemTime, UNIX_EPOCH},
 };
 
 use crate::{
     environment::{EnvRef, Environment},
     interpreter::Interpreter,
+    lox_class::Class,
     lox_error::LoxError,
     lox_value::LoxValue,
     stmt::Stmt,
@@ -24,6 +26,7 @@ pub enum Callable {
         params: Vec<String>,
         body: Vec<Stmt>,
     },
+    Class(Rc<Class>),
 }
 
 impl Display for Callable {
@@ -33,6 +36,7 @@ impl Display for Callable {
                 write!(f, "{name}")
             }
             Callable::UserFunction { name, .. } => write!(f, "{name}"),
+            Callable::Class(class) => write!(f, "{}", class.as_ref().name),
         }
     }
 }
@@ -42,6 +46,7 @@ impl Callable {
         match self {
             Callable::BuiltinFunction { n_args, .. } => *n_args,
             Callable::UserFunction { params, .. } => params.len(),
+            Callable::Class(class) => 0,
         }
     }
     pub fn call(
@@ -74,6 +79,7 @@ impl Callable {
                     crate::interpreter::Signal::Err(lox_error) => Err(lox_error),
                 }
             }
+            Callable::Class(class) => todo!("Crate an instance with an Rc reference to the class"),
         }
     }
 }
