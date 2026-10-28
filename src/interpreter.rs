@@ -7,7 +7,7 @@ use crate::{
     expr::{Expr, ExprId, ExprKind},
     lox_callable::{CLOCK, Callable},
     lox_class::Class,
-    lox_error::LoxError::{self, RuntimeError},
+    lox_error::LoxError::{self},
     lox_value::LoxValue,
     stmt::Stmt,
     token::{TokenType, TokenValue},

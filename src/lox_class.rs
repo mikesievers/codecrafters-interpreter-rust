@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, rc::Rc};
 
 #[derive(Debug, Clone)]
 pub struct Class {
@@ -14,5 +14,16 @@ impl Display for Class {
 impl Class {
     pub fn new(name: &String) -> Self {
         Class { name: name.clone() }
+    }
+}
+
+#[derive(Debug)]
+pub struct Instance {
+    pub class: Rc<Class>,
+}
+
+impl Instance {
+    pub fn new(class: Rc<Class>) -> Self {
+        Instance { class }
     }
 }

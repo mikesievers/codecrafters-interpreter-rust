@@ -1,9 +1,15 @@
 use std::{
+    cell::RefCell,
     fmt::Display,
     ops::{Add, Div, Mul, Neg, Not, Sub},
+    rc::Rc,
 };
 
-use crate::{lox_callable::Callable, lox_class::Class, lox_error::LoxError};
+use crate::{
+    lox_callable::Callable,
+    lox_class::{Class, Instance},
+    lox_error::LoxError,
+};
 
 // The LoxValue is almost identical to the TokenValue
 // The exception is the String - while the TokenValue
@@ -17,6 +23,7 @@ pub enum LoxValue {
     Boolean(bool),
     Nil,
     Callable(Callable),
+    Instance(Rc<RefCell<Instance>>),
 }
 
 impl Display for LoxValue {
@@ -27,6 +34,9 @@ impl Display for LoxValue {
             LoxValue::Boolean(b) => b.to_string(),
             LoxValue::Nil => "nil".to_string(),
             LoxValue::Callable(function) => format!("<fn {function}>"),
+            LoxValue::Instance(instance) => {
+                format!("{} instance", instance.borrow().class.name)
+            }
         };
         write!(f, "{output}")
     }

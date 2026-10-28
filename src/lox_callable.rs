@@ -1,4 +1,5 @@
 use std::{
+    cell::RefCell,
     fmt::Display,
     rc::Rc,
     time::{SystemTime, UNIX_EPOCH},
@@ -7,7 +8,7 @@ use std::{
 use crate::{
     environment::{EnvRef, Environment},
     interpreter::Interpreter,
-    lox_class::Class,
+    lox_class::{Class, Instance},
     lox_error::LoxError,
     lox_value::LoxValue,
     stmt::Stmt,
@@ -79,7 +80,10 @@ impl Callable {
                     crate::interpreter::Signal::Err(lox_error) => Err(lox_error),
                 }
             }
-            Callable::Class(class) => todo!("Crate an instance with an Rc reference to the class"),
+            Callable::Class(class) => {
+                let instance = Instance::new(class.clone());
+                Ok(LoxValue::Instance(Rc::new(RefCell::new(instance))))
+            }
         }
     }
 }
