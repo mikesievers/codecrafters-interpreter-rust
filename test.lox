@@ -1,6 +1,10 @@
-print clock();
+// Basic property setting and getting
 class Spaceship {}
 var falcon = Spaceship();
 
-print Spaceship;
-print falcon;
+falcon.name = "Millennium Falcon";
+falcon.speed = 75.5;
+
+print "Ship details:";
+print falcon.name;
+print falcon.speed;

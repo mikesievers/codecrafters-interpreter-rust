@@ -152,6 +152,9 @@ impl Resolver {
                     self.resolve_expr(arg)?;
                 }
             }
+            ExprKind::Get { object, .. } => {
+                self.resolve_expr(object)?;
+            }
         }
         Ok(())
     }

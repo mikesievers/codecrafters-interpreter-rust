@@ -36,6 +36,10 @@ pub enum ExprKind {
         name: String,
         value: Box<Expr>,
     },
+    Get {
+        object: Box<Expr>,
+        name: Token,
+    },
     Call {
         callee: Box<Expr>,
         paren: Token,
@@ -79,6 +83,7 @@ impl Display for ExprKind {
                     .collect_vec()
                     .join(",")
             ),
+            ExprKind::Get { object, name } => format!("{object}.{name}"),
         };
         write!(f, "{output}")
     }

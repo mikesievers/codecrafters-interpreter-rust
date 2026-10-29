@@ -591,13 +591,27 @@ fn parse_unary(parser: &mut Parser) -> Result<Expr, LoxError> {
     parse_call(parser)
 }
 
-// call           → primary ( "(" arguments? ")" )* ;
+// call           → primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
 fn parse_call(parser: &mut Parser) -> Result<Expr, LoxError> {
     let mut expr = parse_primary(parser)?;
 
     loop {
         if parser.matches(&[TokenType::LeftParen]) {
             expr = finish_call(parser, expr)?;
+        } else if parser.matches(&[TokenType::Dot]) {
+            let Ok(name) = parser.consume(&TokenType::Identifier) else {
+                eprintln!("Expect property name after '.'.");
+                return Err(LoxError::SyntaxError(
+                    "Expect property name after '.'".into(),
+                ));
+            };
+            expr = Expr {
+                id: parser.get_next_id(),
+                kind: ExprKind::Get {
+                    object: Box::new(expr),
+                    name,
+                },
+            };
         } else {
             break;
         }
