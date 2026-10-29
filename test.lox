@@ -3,11 +3,9 @@ class Spaceship {}
 var falcon = Spaceship();
 print falcon;
 
-print falcon.namee;
+falcon.name = "Millennium Falcon";
+falcon.speed = 75.5;
 
-//falcon.name = "Millennium Falcon";
-//falcon.speed = 75.5;
-
-//print "Ship details:";
-//print falcon.name;
-//print falcon.speed;
+print "Ship details:";
+print falcon.name;
+print falcon.speed;

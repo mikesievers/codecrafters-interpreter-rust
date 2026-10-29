@@ -40,6 +40,11 @@ pub enum ExprKind {
         object: Box<Expr>,
         name: Token,
     },
+    Set {
+        object: Box<Expr>,
+        name: Token,
+        value: Box<Expr>,
+    },
     Call {
         callee: Box<Expr>,
         paren: Token,
@@ -84,6 +89,11 @@ impl Display for ExprKind {
                     .join(",")
             ),
             ExprKind::Get { object, name } => format!("{object}.{name}"),
+            ExprKind::Set {
+                object,
+                name,
+                value,
+            } => format!("{object}.{name} = {value}"),
         };
         write!(f, "{output}")
     }

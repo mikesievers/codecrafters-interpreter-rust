@@ -362,6 +362,23 @@ impl Interpreter {
                     ))),
                 }
             }
+            ExprKind::Set {
+                object,
+                name,
+                value,
+            } => {
+                let object_eval = self.evaluate(object)?;
+                match object_eval {
+                    LoxValue::Instance(instance) => {
+                        let value = self.evaluate(value)?;
+                        instance.borrow_mut().set(&name.lexeme, value.clone());
+                        Ok(value)
+                    }
+                    _ => Err(LoxError::RuntimeError(format!(
+                        "{name}: Only instances have fields."
+                    ))),
+                }
+            }
         }
     }
 }

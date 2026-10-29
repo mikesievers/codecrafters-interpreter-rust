@@ -417,7 +417,7 @@ fn parse_expression(parser: &mut Parser) -> Result<Expr, LoxError> {
     }
 }
 
-// assignment     → IDENTIFIER "=" assignment
+// assignment     → ( call "." )? IDENTIFIER "=" assignment
 //                | logic_or ;
 fn parse_assignment(parser: &mut Parser) -> Result<Expr, LoxError> {
     let expr = parse_or(parser)?;
@@ -434,6 +434,16 @@ fn parse_assignment(parser: &mut Parser) -> Result<Expr, LoxError> {
                     id: parser.get_next_id(),
                     kind: ExprKind::Assign {
                         name: name.clone(),
+                        value: Box::new(value),
+                    },
+                });
+            }
+            ExprKind::Get { object, name } => {
+                return Ok(Expr {
+                    id: parser.get_next_id(),
+                    kind: ExprKind::Set {
+                        name: name.clone(),
+                        object: object.clone(),
                         value: Box::new(value),
                     },
                 });

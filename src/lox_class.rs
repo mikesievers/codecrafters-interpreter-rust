@@ -42,4 +42,8 @@ impl Instance {
             .cloned()
             .ok_or_else(|| LoxError::RuntimeError(format!("Undefined property '{name}'.")))
     }
+
+    pub fn set(&mut self, name: &str, value: LoxValue) {
+        self.fields.insert(name.to_string(), value);
+    }
 }
