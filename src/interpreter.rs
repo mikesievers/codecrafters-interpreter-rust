@@ -353,6 +353,15 @@ impl Interpreter {
 
                 callee.call(self, arguments)
             }
+            ExprKind::Get { object, name } => {
+                let object_eval = self.evaluate(object)?;
+                match object_eval {
+                    LoxValue::Instance(instance) => instance.borrow().get(&name.lexeme),
+                    _ => Err(LoxError::RuntimeError(format!(
+                        "{name}: Only instances have properties."
+                    ))),
+                }
+            }
         }
     }
 }

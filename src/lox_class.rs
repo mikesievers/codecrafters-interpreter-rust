@@ -1,4 +1,9 @@
-use std::{fmt::Display, rc::Rc};
+use std::{collections::HashMap, fmt::Display, rc::Rc};
+
+use crate::{
+    lox_error::LoxError::{self, RuntimeError},
+    lox_value::LoxValue,
+};
 
 #[derive(Debug, Clone)]
 pub struct Class {
@@ -20,10 +25,21 @@ impl Class {
 #[derive(Debug)]
 pub struct Instance {
     pub class: Rc<Class>,
+    fields: HashMap<String, LoxValue>,
 }
 
 impl Instance {
     pub fn new(class: Rc<Class>) -> Self {
-        Instance { class }
+        Instance {
+            class,
+            fields: HashMap::new(),
+        }
+    }
+
+    pub fn get(&self, name: &str) -> Result<LoxValue, LoxError> {
+        self.fields
+            .get(name)
+            .cloned()
+            .ok_or_else(|| LoxError::RuntimeError(format!("Undefined property '{name}'.")))
     }
 }
