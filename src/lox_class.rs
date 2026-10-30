@@ -8,6 +8,7 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct Class {
     pub name: String,
+    methods: HashMap<String, LoxValue>,
 }
 
 impl Display for Class {
@@ -17,8 +18,15 @@ impl Display for Class {
 }
 
 impl Class {
-    pub fn new(name: &String) -> Self {
-        Class { name: name.clone() }
+    pub fn new(name: &str, methods: HashMap<String, LoxValue>) -> Self {
+        Class {
+            name: name.to_owned(),
+            methods,
+        }
+    }
+
+    pub fn find_method(&self, name: &str) -> Option<LoxValue> {
+        self.methods.get(name).cloned()
     }
 }
 
@@ -37,10 +45,20 @@ impl Instance {
     }
 
     pub fn get(&self, name: &str) -> Result<LoxValue, LoxError> {
-        self.fields
-            .get(name)
-            .cloned()
-            .ok_or_else(|| LoxError::RuntimeError(format!("Undefined property '{name}'.")))
+        // Return field, if found
+        if self.fields.contains_key(name) {
+            return self.fields.get(name).cloned().ok_or_else(|| {
+                LoxError::RuntimeError("Trying to return an undefined field".into())
+            });
+        }
+        // Return method, if found
+        if let Some(method) = self.class.find_method(name) {
+            return Ok(method);
+        }
+
+        Err(LoxError::RuntimeError(format!(
+            "Undefined property '{name}'."
+        )))
     }
 
     pub fn set(&mut self, name: &str, value: LoxValue) {

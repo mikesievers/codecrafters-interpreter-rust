@@ -2,12 +2,14 @@ use std::collections::HashMap;
 
 use crate::{
     expr::{Expr, ExprId, ExprKind},
-    lox_error::LoxError,
+    lox_error::LoxError::{self},
     stmt::Stmt,
+    token::Token,
 };
 
 enum FunctionType {
     Function,
+    Method,
 }
 
 pub struct Resolver {
@@ -47,27 +49,7 @@ impl Resolver {
                 self.declare(&name.lexeme)?;
                 self.define(&name.lexeme);
 
-                let enclosing_function = self.current_function.replace(FunctionType::Function);
-
-                self.begin_scope();
-                for param in params {
-                    self.declare(&param.lexeme)?;
-                    self.define(&param.lexeme);
-                }
-                // resolve the body
-                // Ensure that no new scope is started
-                // self.resolve_stmt(body)?;
-                match &**body {
-                    Stmt::Block(stmts) => {
-                        for stmt in stmts {
-                            self.resolve_stmt(stmt)?;
-                        }
-                    }
-                    _ => self.resolve_stmt(body)?,
-                }
-                self.end_scope();
-
-                self.current_function = enclosing_function;
+                self.resolve_function(params, body, FunctionType::Function)?;
             }
             Stmt::If {
                 condition,
@@ -111,8 +93,46 @@ impl Resolver {
                 if !self.scopes.is_empty() {
                     self.locals.insert(*id, 0);
                 }
+
+                for method in methods.iter() {
+                    let Stmt::Function { params, body, .. } = method else {
+                        return Err(LoxError::SyntaxError(format!(
+                            "Class has a non-function as method: {stmt}"
+                        )));
+                    };
+                    self.resolve_function(params, body, FunctionType::Method)?;
+                }
             }
         }
+        Ok(())
+    }
+
+    // Helper to resolve function and methods
+    fn resolve_function(
+        &mut self,
+        params: &Vec<Token>,
+        body: &Stmt,
+        function_type: FunctionType,
+    ) -> Result<(), LoxError> {
+        let enclosing_function = self.current_function.replace(function_type);
+
+        self.begin_scope();
+        for param in params {
+            self.declare(&param.lexeme)?;
+            self.define(&param.lexeme);
+        }
+        match body {
+            Stmt::Block(stmts) => {
+                for stmt in stmts {
+                    self.resolve_stmt(stmt)?;
+                }
+            }
+            _ => self.resolve_stmt(body)?,
+        }
+        self.end_scope();
+
+        self.current_function = enclosing_function;
+
         Ok(())
     }
 
@@ -155,10 +175,10 @@ impl Resolver {
             ExprKind::Get { object, .. } => {
                 self.resolve_expr(object)?;
             }
-            ExprKind::Set { object,  value , ..} => {
+            ExprKind::Set { object, value, .. } => {
                 self.resolve_expr(object)?;
                 self.resolve_expr(value)?;
-            },
+            }
         }
         Ok(())
     }

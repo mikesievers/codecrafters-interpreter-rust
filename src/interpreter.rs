@@ -239,9 +239,31 @@ impl Interpreter {
                 },
                 None => Signal::Return(LoxValue::Nil),
             },
-            Stmt::Class { id, name, .. } => {
+            Stmt::Class { id, name, methods } => {
                 self.define_variable(&name.lexeme, None);
-                let class = Class::new(&name.lexeme);
+
+                let mut methods_field = HashMap::new();
+                for method in methods.iter() {
+                    let Stmt::Function { params, body, name } = method else {
+                        return Signal::Err(LoxError::SyntaxError(format!(
+                            "Class has a non-function as method: {stmt}"
+                        )));
+                    };
+                    let Stmt::Block(statements) = (**body).clone() else {
+                        return Signal::Err(LoxError::SyntaxError(format!(
+                            "Function Body must be a Block: {stmt}"
+                        )));
+                    };
+                    let function = LoxValue::Callable(Callable::UserFunction {
+                        name: name.lexeme.clone(),
+                        params: params.iter().map(|p| p.lexeme.clone()).collect_vec(),
+                        body: statements,
+                        closure: self.env.clone(),
+                    });
+                    methods_field.insert(name.lexeme.clone(), function);
+                }
+
+                let class = Class::new(&name.lexeme, methods_field);
                 match self.assign_variable(
                     *id,
                     &name.lexeme,
