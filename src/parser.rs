@@ -660,7 +660,7 @@ fn finish_call(parser: &mut Parser, callee: Expr) -> Result<Expr, LoxError> {
     })
 }
 
-// primary        → NUMBER | STRING | "true" | "false" | "nil"
+// primary        → NUMBER | STRING | "true" | "false" | "nil" | "this"
 //                | "(" expression ")" ;
 fn parse_primary(parser: &mut Parser) -> Result<Expr, LoxError> {
     if parser.matches(&[TokenType::Number]) {
@@ -720,6 +720,15 @@ fn parse_primary(parser: &mut Parser) -> Result<Expr, LoxError> {
         return Err(LoxError::SyntaxError(
             "Missing closing parenthesis".to_string(),
         ));
+    }
+
+    if parser.matches(&[TokenType::This]) {
+        return Ok(Expr {
+            id: parser.get_next_id(),
+            kind: ExprKind::This {
+                keyword: parser.previous().clone(),
+            },
+        });
     }
 
     if parser.matches(&[TokenType::Identifier]) {

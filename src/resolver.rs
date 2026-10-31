@@ -94,6 +94,11 @@ impl Resolver {
                     self.locals.insert(*id, 0);
                 }
 
+                self.begin_scope();
+                self.scopes
+                    .last_mut()
+                    .expect("At least one scope must exist".into())
+                    .insert("this".to_owned(), true);
                 for method in methods.iter() {
                     let Stmt::Function { params, body, .. } = method else {
                         return Err(LoxError::SyntaxError(format!(
@@ -102,6 +107,7 @@ impl Resolver {
                     };
                     self.resolve_function(params, body, FunctionType::Method)?;
                 }
+                self.end_scope();
             }
         }
         Ok(())
@@ -178,6 +184,9 @@ impl Resolver {
             ExprKind::Set { object, value, .. } => {
                 self.resolve_expr(object)?;
                 self.resolve_expr(value)?;
+            }
+            ExprKind::This { keyword } => {
+                self.resolve_local(expr, &keyword.lexeme);
             }
         }
         Ok(())

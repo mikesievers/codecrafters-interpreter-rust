@@ -377,12 +377,23 @@ impl Interpreter {
             }
             ExprKind::Get { object, name } => {
                 let object_eval = self.evaluate(object)?;
-                match object_eval {
-                    LoxValue::Instance(instance) => instance.borrow().get(&name.lexeme),
-                    _ => Err(LoxError::RuntimeError(format!(
-                        "{name}: Only instances have properties."
-                    ))),
-                }
+                let instance = match object_eval {
+                    LoxValue::Instance(instance) => instance,
+                    _ => {
+                        return Err(LoxError::RuntimeError(format!(
+                            "{name}: Only instances have properties."
+                        )));
+                    }
+                };
+                let value = instance.borrow().get(&name.lexeme)?;
+
+                let bound_value = match value {
+                    LoxValue::Callable(callable) => {
+                        LoxValue::Callable(callable.bind(instance.clone()))
+                    }
+                    other => other,
+                };
+                Ok(bound_value)
             }
             ExprKind::Set {
                 object,
@@ -400,6 +411,10 @@ impl Interpreter {
                         "{name}: Only instances have fields."
                     ))),
                 }
+            }
+            ExprKind::This { keyword } => {
+                let this = self.lookup_variable(expr.id, &keyword.lexeme)?;
+                this.ok_or_else(|| LoxError::RuntimeError("Could not resolve 'this'".into()))
             }
         }
     }

@@ -1,10 +1,23 @@
-class Robot {
-  beep() {
-    print "Beep boop!";
+class Animal {
+  makeSound() {
+    print this.sound;
+  }
+  identify() {
+    print this.species;
   }
 }
 
-var r2d2 = Robot();
-r2d2.beep();
+var dog = Animal();
+dog.sound = "Woof";
+dog.species = "Dog";
 
-Robot().beep();
+var cat = Animal();
+cat.sound = "Meow";
+cat.species = "Cat";
+
+// Swap methods between instances
+cat.makeSound = dog.makeSound;
+dog.identify = cat.identify;
+
+cat.makeSound();
+dog.identify();

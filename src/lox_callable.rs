@@ -86,6 +86,36 @@ impl Callable {
             }
         }
     }
+
+    pub fn bind(&self, instance: Rc<RefCell<Instance>>) -> Self {
+        match self {
+            Callable::UserFunction {
+                name,
+                closure,
+                params,
+                body,
+            } => {
+                // Create a new env and define this in it
+                let bound_env = match closure {
+                    Some(closure) => Environment::new_child(closure),
+                    None => Environment::new_local(),
+                };
+
+                bound_env
+                    .borrow_mut()
+                    .put("this", Some(LoxValue::Instance(instance)));
+
+                Callable::UserFunction {
+                    name: name.clone(),
+                    closure: Some(bound_env),
+                    params: params.clone(),
+                    body: body.clone(),
+                }
+            }
+            // Don't bind builtins and Classes to 'this'
+            other => other.clone(),
+        }
+    }
 }
 
 // Built in functions

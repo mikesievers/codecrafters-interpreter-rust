@@ -50,6 +50,9 @@ pub enum ExprKind {
         paren: Token,
         arguments: Vec<Expr>,
     },
+    This {
+        keyword: Token,
+    },
 }
 
 impl Display for Expr {
@@ -94,6 +97,7 @@ impl Display for ExprKind {
                 name,
                 value,
             } => format!("{object}.{name} = {value}"),
+            ExprKind::This { keyword } => format!("{keyword}"),
         };
         write!(f, "{output}")
     }
