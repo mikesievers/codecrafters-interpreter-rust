@@ -12,10 +12,15 @@ enum FunctionType {
     Method,
 }
 
+enum ClassType {
+    Class,
+}
+
 pub struct Resolver {
     scopes: Vec<HashMap<String, bool>>,
     locals: HashMap<ExprId, usize>,
     current_function: Option<FunctionType>,
+    current_class: Option<ClassType>,
 }
 
 impl Resolver {
@@ -24,6 +29,7 @@ impl Resolver {
             scopes: Vec::new(),
             locals: HashMap::new(),
             current_function: None,
+            current_class: None,
         }
     }
 
@@ -87,6 +93,7 @@ impl Resolver {
                 self.resolve_stmt(body)?;
             }
             Stmt::Class { id, name, methods } => {
+                let enclosing_class = self.current_class.replace(ClassType::Class);
                 self.declare(&name.lexeme)?;
                 self.define(&name.lexeme);
                 // Because the class is being declared in this statement, the distance must be 0
@@ -108,6 +115,7 @@ impl Resolver {
                     self.resolve_function(params, body, FunctionType::Method)?;
                 }
                 self.end_scope();
+                self.current_class = enclosing_class;
             }
         }
         Ok(())
@@ -186,6 +194,11 @@ impl Resolver {
                 self.resolve_expr(value)?;
             }
             ExprKind::This { keyword } => {
+                if self.current_class.is_none() {
+                    return Err(LoxError::SyntaxError(
+                        "Can't use 'this' outside of a class.".into(),
+                    ));
+                }
                 self.resolve_local(expr, &keyword.lexeme);
             }
         }
