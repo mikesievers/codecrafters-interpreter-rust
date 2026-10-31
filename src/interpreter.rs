@@ -385,13 +385,22 @@ impl Interpreter {
                         )));
                     }
                 };
+                let is_instance_field = instance.borrow().has_field(&name.lexeme);
                 let value = instance.borrow().get(&name.lexeme)?;
 
-                let bound_value = match value {
-                    LoxValue::Callable(callable) => {
-                        LoxValue::Callable(callable.bind(instance.clone()))
+                let bound_value = if is_instance_field {
+                    // The value is stored on the instance itself (e.g. a
+                    // method copied from another instance). Its `this` was
+                    // already bound when it was stored, so re-binding it to
+                    // the accessing instance would clobber that.
+                    value
+                } else {
+                    match value {
+                        LoxValue::Callable(callable) => {
+                            LoxValue::Callable(callable.bind(instance.clone()))
+                        }
+                        other => other,
                     }
-                    other => other,
                 };
                 Ok(bound_value)
             }

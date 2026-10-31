@@ -44,6 +44,10 @@ impl Instance {
         }
     }
 
+    pub fn has_field(&self, name: &str) -> bool {
+        self.fields.contains_key(name)
+    }
+
     pub fn get(&self, name: &str) -> Result<LoxValue, LoxError> {
         // Return field, if found
         if self.fields.contains_key(name) {
