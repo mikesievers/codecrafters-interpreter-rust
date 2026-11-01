@@ -7,8 +7,10 @@ use crate::{
     token::Token,
 };
 
+#[derive(Debug, PartialEq, Clone, Copy)]
 enum FunctionType {
     Function,
+    Initializer,
     Method,
 }
 
@@ -77,6 +79,11 @@ impl Resolver {
                         "Can't return from top-level code.".into(),
                     ));
                 }
+                if self.current_function == Some(FunctionType::Initializer) {
+                    return Err(LoxError::SyntaxError(
+                        "Can't return a value from an initializer.".into(),
+                    ));
+                }
                 if let Some(value) = value {
                     self.resolve_expr(value)?;
                 }
@@ -104,15 +111,20 @@ impl Resolver {
                 self.begin_scope();
                 self.scopes
                     .last_mut()
-                    .expect("At least one scope must exist".into())
+                    .expect("At least one scope must exist")
                     .insert("this".to_owned(), true);
                 for method in methods.iter() {
-                    let Stmt::Function { params, body, .. } = method else {
+                    let Stmt::Function { params, body, name } = method else {
                         return Err(LoxError::SyntaxError(format!(
                             "Class has a non-function as method: {stmt}"
                         )));
                     };
-                    self.resolve_function(params, body, FunctionType::Method)?;
+                    let declaration = if name.lexeme == "init" {
+                        FunctionType::Initializer
+                    } else {
+                        FunctionType::Method
+                    };
+                    self.resolve_function(params, body, declaration)?;
                 }
                 self.end_scope();
                 self.current_class = enclosing_class;
