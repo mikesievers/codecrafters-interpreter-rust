@@ -1,8 +1,10 @@
 class Foo {
     init() {
         print "yo";
-        return 2;
+        return;
     }
 }
 
 var f = Foo();
+
+print f.init();

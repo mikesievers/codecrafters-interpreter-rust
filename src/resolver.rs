@@ -79,7 +79,7 @@ impl Resolver {
                         "Can't return from top-level code.".into(),
                     ));
                 }
-                if self.current_function == Some(FunctionType::Initializer) {
+                if self.current_function == Some(FunctionType::Initializer) && value.is_some() {
                     return Err(LoxError::SyntaxError(
                         "Can't return a value from an initializer.".into(),
                     ));
