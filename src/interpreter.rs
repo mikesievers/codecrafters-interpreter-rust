@@ -228,6 +228,7 @@ impl Interpreter {
                             .map(|token| token.lexeme.clone())
                             .collect_vec(),
                         body: function_body,
+                        is_initializer: false,
                     })),
                 );
                 Signal::Ok(LoxValue::Nil)
@@ -259,6 +260,7 @@ impl Interpreter {
                         params: params.iter().map(|p| p.lexeme.clone()).collect_vec(),
                         body: statements,
                         closure: self.env.clone(),
+                        is_initializer: name.lexeme == "init",
                     });
                     methods_field.insert(name.lexeme.clone(), function);
                 }

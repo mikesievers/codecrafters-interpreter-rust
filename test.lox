@@ -1,1 +1,7 @@
-print this;
+class Foo {
+    init() {
+        print "yo";
+    }
+}
+
+var f = Foo();

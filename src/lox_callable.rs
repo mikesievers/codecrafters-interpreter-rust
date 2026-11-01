@@ -26,6 +26,7 @@ pub enum Callable {
         closure: Option<EnvRef>,
         params: Vec<String>,
         body: Vec<Stmt>,
+        is_initializer: bool,
     },
     Class(Rc<Class>),
 }
@@ -47,7 +48,10 @@ impl Callable {
         match self {
             Callable::BuiltinFunction { n_args, .. } => *n_args,
             Callable::UserFunction { params, .. } => params.len(),
-            Callable::Class(class) => 0,
+            Callable::Class(class) => match class.find_method("init") {
+                Some(LoxValue::Callable(init)) => init.arity(),
+                _ => 0,
+            },
         }
     }
     pub fn call(
@@ -61,6 +65,7 @@ impl Callable {
                 params,
                 body,
                 closure,
+                is_initializer,
                 ..
             } => {
                 // Create a fresh environment for this call, enclosing the closure.
@@ -76,13 +81,31 @@ impl Callable {
                 }
                 match interpreter.execute(&Stmt::Block(body.clone()), Some(call_env)) {
                     crate::interpreter::Signal::Ok(lox_value)
-                    | crate::interpreter::Signal::Return(lox_value) => Ok(lox_value),
+                    | crate::interpreter::Signal::Return(lox_value) => match is_initializer {
+                        true => {
+                            let this = closure
+                                .clone()
+                                .expect("Closure must exist")
+                                .borrow()
+                                .get(&"this")?;
+                            this.ok_or_else(|| {
+                                LoxError::RuntimeError(
+                                    "Class did not have 'this' as defined method".into(),
+                                )
+                            })
+                        }
+                        false => Ok(lox_value),
+                    },
                     crate::interpreter::Signal::Err(lox_error) => Err(lox_error),
                 }
             }
             Callable::Class(class) => {
-                let instance = Instance::new(class.clone());
-                Ok(LoxValue::Instance(Rc::new(RefCell::new(instance))))
+                let instance = Rc::new(RefCell::new(Instance::new(class.clone())));
+                if let Some(LoxValue::Callable(init_fn)) = class.find_method("init") {
+                    let bound = init_fn.bind(instance.clone());
+                    bound.call(interpreter, arguments)?;
+                }
+                Ok(LoxValue::Instance(instance))
             }
         }
     }
@@ -94,6 +117,7 @@ impl Callable {
                 closure,
                 params,
                 body,
+                is_initializer,
             } => {
                 // Create a new env and define this in it
                 let bound_env = match closure {
@@ -110,6 +134,7 @@ impl Callable {
                     closure: Some(bound_env),
                     params: params.clone(),
                     body: body.clone(),
+                    is_initializer: *is_initializer,
                 }
             }
             // Don't bind builtins and Classes to 'this'
